@@ -1,0 +1,56 @@
+name: Deploy production (main) to LWS (FTP)
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+# Un seul déploiement à la fois
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+env:
+  # Même version que celle du site dans le panel LWS (vendor/ est construit avec)
+  PHP_VERSION: '8.2'
+
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          tools: composer:v2
+          coverage: none
+
+      - name: Composer install (production)
+        run: composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-progress
+
+      - name: Upload via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.4.0
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftps       
+          port: 21
+          local-dir: ./
+          server-dir: ${{ secrets.FTP_SERVER_DIR }}
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            .github/**
+            .env
+            .env.*
+            tests/**
+            storage/**
+            phpunit.xml
