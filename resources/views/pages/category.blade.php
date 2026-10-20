@@ -4,6 +4,9 @@
   $title = ($currentCategory!=null)? $currentCategory->libelle: 'Toutes les catégories';
   $repertCat = "storage/images/Categories/";
   $repertProd = "storage/images/Articles/";
+  $categoryUrl = $currentCategory
+    ? route('category', ['slug' => $currentCategory->id])
+    : route('category');
 @endphp
 @section('title', $title)
 
@@ -19,38 +22,43 @@
   </ul>
 
   <div class="row">
-    <aside id="column-left" class="col-sm-3 hidden-xs">
+    <aside id="column-left" class="col-sm-3">
       <div class="list-group">
         <a class="list-group-item {{ $currentCategory ==null ? 'active' : '' }}" href="{{ route('category') }}">Toutes les catégories</a>
         @foreach($categories as $c)
-          <a class="list-group-item {{ ($currentCategory!=null && $currentCategory->id===$c->id) ? 'active' : '' }}" href="{{ route('category', ['slug' => $c->id]) }}">
+          <a class="list-group-item {{ ($currentCategory!=null && (string) $currentCategory->id === (string) $c->id) ? 'active' : '' }}" href="{{ route('category', ['slug' => $c->id]) }}">
             {{ $c->libelle }} <span class="pull-right">({{ $c->nbprod }})</span>
           </a>
         @endforeach
       </div>
 
       <div class="panel panel-default">
-        <div class="panel-heading"><strong>Filtrer</strong></div>
+        <div class="panel-heading"><strong>Filtrer les produits</strong></div>
         <div class="panel-body">
-          <div class="form-group">
-            <label>Marque</label>
-            <select class="form-control" id="filterBrand">
-              <option value="">Toutes</option>
-              @foreach($brands as $b)
-                <option value="{{ $b->id }}">{{ $b->libelle }}</option>
-              @endforeach
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Prix</label>
-            <div class="row">
-              <div class="col-xs-6"><input class="form-control" type="number" placeholder="Min" id="filterMin" min="0"></div>
-              <div class="col-xs-6"><input class="form-control" type="number" placeholder="Max" id="filterMax" min="0"></div>
+          <form method="GET" action="{{ $categoryUrl }}" id="category-filters">
+            <input type="hidden" name="sort" value="{{ $filters['sort'] }}">
+            <div class="form-group">
+              <label for="filterBrand">Marque</label>
+              <select class="form-control" id="filterBrand" name="brand">
+                <option value="">Toutes les marques</option>
+                @foreach($brands as $b)
+                  <option value="{{ $b->id }}" {{ $filters['brand'] === (string) $b->id ? 'selected' : '' }}>{{ $b->libelle }}</option>
+                @endforeach
+              </select>
             </div>
-          </div>
-          <button class="btn btn-primary btn-block" type="button" id="filterApply">Appliquer</button>
-          <button class="btn btn-default btn-block" type="button" id="filterReset">Réinitialiser</button>
-          <p class="help-block" style="margin-top:10px;">Filtre simulé (sans base de données).</p>
+            <div class="form-group">
+              <label>Prix (€)</label>
+              <div class="row">
+                <div class="col-xs-6"><input class="form-control" type="number" name="min_price" placeholder="Min" value="{{ $filters['min_price'] }}" min="0" step="0.01" aria-label="Prix minimum"></div>
+                <div class="col-xs-6"><input class="form-control" type="number" name="max_price" placeholder="Max" value="{{ $filters['max_price'] }}" min="0" step="0.01" aria-label="Prix maximum"></div>
+              </div>
+            </div>
+            @if($errors->any())
+              <div class="alert alert-danger" role="alert">{{ $errors->first() }}</div>
+            @endif
+            <button class="btn btn-primary btn-block" type="submit">Appliquer les filtres</button>
+            <a class="btn btn-default btn-block" href="{{ $categoryUrl }}">Réinitialiser</a>
+          </form>
         </div>
       </div>
     </aside>
@@ -68,7 +76,7 @@
                 </div>
                 <div class="col-xs-12 col-sm-8">
                   <p style="margin-top: 10px;">
-                    Retrouvez notre sélection <strong>{{ strtolower($currentCategory->libelle) }}</strong> (maquette). Vous pourrez brancher la base de données plus tard.
+                    Retrouvez notre sélection <strong>{{ strtolower($currentCategory->libelle) }}</strong> et filtrez les produits selon vos besoins.
                   </p>
                   <ul class="list-inline" style="margin:0;">
                     <li><i class="fa fa-check"></i> Livraison rapide</li>
@@ -92,12 +100,18 @@
         <div class="col-sm-6 text-right">
           <div class="form-inline">
             <label class="control-label">Trier par</label>
-            <select class="form-control" id="sortBy">
-              <option value="popular">Populaire</option>
-              <option value="name">Nom</option>
-              <option value="priceAsc">Prix (croissant)</option>
-              <option value="priceDesc">Prix (décroissant)</option>
-            </select>
+            <form method="GET" action="{{ $categoryUrl }}" class="form-inline" id="category-sort">
+              <input type="hidden" name="brand" value="{{ $filters['brand'] }}">
+              <input type="hidden" name="min_price" value="{{ $filters['min_price'] }}">
+              <input type="hidden" name="max_price" value="{{ $filters['max_price'] }}">
+              <label class="control-label" for="sortBy">Trier par</label>
+              <select class="form-control" id="sortBy" name="sort">
+                <option value="popular" {{ $filters['sort'] === 'popular' ? 'selected' : '' }}>Nouveautés</option>
+                <option value="name" {{ $filters['sort'] === 'name' ? 'selected' : '' }}>Nom</option>
+                <option value="priceAsc" {{ $filters['sort'] === 'priceAsc' ? 'selected' : '' }}>Prix (croissant)</option>
+                <option value="priceDesc" {{ $filters['sort'] === 'priceDesc' ? 'selected' : '' }}>Prix (décroissant)</option>
+              </select>
+            </form>
           </div>
         </div>
       </div>
@@ -105,13 +119,15 @@
 
       <div class="row" id="productGrid">
         @forelse($products as $p)
-          <div class="product-layout product-grid col-lg-4 col-md-4 col-sm-6 col-xs-12"
-               data-brand="{{ $p->libmarque }}"
-               data-price="{{ $p->prix }}">
+          <div class="product-layout product-grid col-lg-4 col-md-4 col-sm-6 col-xs-12">
             <div class="product-thumb transition">
               <div class="image">
                 <a href="{{ route('product', ['slug' => $p->id]) }}">
-                  <img src="{{ asset($repertProd.$p->photo1) }}" alt="{{ $p->libelle }}" class="img-responsive center-block" />
+                  @if($p->photo1)
+                    <img src="{{ asset($repertProd.$p->photo1) }}" alt="{{ $p->libelle }}" class="img-responsive center-block" />
+                  @else
+                    <span class="category-product-placeholder" aria-hidden="true"><i class="fa fa-shopping-basket"></i></span>
+                  @endif
                 </a>
                 @if($p->old_price > 0)
                   @php
@@ -147,22 +163,24 @@
           </div>
         @empty
           <div class="col-xs-12">
-            <div class="alert alert-info">Aucun produit (maquette).</div>
+            <div class="alert alert-info">Aucun produit ne correspond à ces critères.</div>
+            <a href="{{ $categoryUrl }}" class="btn btn-default">Effacer les filtres</a>
           </div>
         @endforelse
       </div>
 
-      <div class="row">
-        <div class="col-sm-6"><p class="help-block">Affichage simulé, sans pagination réelle.</p></div>
-        <div class="col-sm-6 text-right">
-          <ul class="pagination">
-            <li class="active"><span>1</span></li>
-            <li><a href="#" onclick="return false;">2</a></li>
-            <li><a href="#" onclick="return false;">3</a></li>
-            <li><a href="#" onclick="return false;">&raquo;</a></li>
-          </ul>
+      @if($products->total() > 0)
+        <div class="row category-pagination">
+          <div class="col-sm-6">
+            <p class="help-block">
+              Affichage de {{ $products->firstItem() }} à {{ $products->lastItem() }} sur {{ $products->total() }} produit(s)
+            </p>
+          </div>
+          <div class="col-sm-6 text-right">
+            {{ $products->onEachSide(1)->links('pagination::bootstrap-4') }}
+          </div>
         </div>
-      </div>
+      @endif
     </div>
   </div>
 </div>
@@ -192,40 +210,11 @@
     if(gridBtn) gridBtn.addEventListener('click', function(){ setList(false); });
     if(listBtn) listBtn.addEventListener('click', function(){ setList(true); });
 
-    // Filtre mock
-    function applyFilter(){
-      var brand = (document.getElementById('filterBrand')||{}).value || '';
-      var min = parseFloat((document.getElementById('filterMin')||{}).value || '');
-      var max = parseFloat((document.getElementById('filterMax')||{}).value || '');
-      var cards = grid.querySelectorAll('.product-layout');
-      var shown = 0;
-      cards.forEach(function(card){
-        var b = card.getAttribute('data-brand');
-        var price = parseFloat(card.getAttribute('data-price') || '0');
-        var ok = true;
-        if(brand && b !== brand) ok = false;
-        if(!isNaN(min) && price < min) ok = false;
-        if(!isNaN(max) && price > max) ok = false;
-        card.style.display = ok ? '' : 'none';
-        if(ok) shown++;
-      });
-      lemastore.toast('Filtre appliqué (maquette) : ' + shown + ' produit(s).');
+    var sortForm = document.getElementById('category-sort');
+    var sortSelect = document.getElementById('sortBy');
+    if(sortForm && sortSelect) {
+      sortSelect.addEventListener('change', function(){ sortForm.submit(); });
     }
-    function resetFilter(){
-      ['filterBrand','filterMin','filterMax'].forEach(function(id){
-        var el = document.getElementById(id);
-        if(!el) return;
-        if(el.tagName === 'SELECT') el.selectedIndex = 0;
-        else el.value = '';
-      });
-      var cards = grid.querySelectorAll('.product-layout');
-      cards.forEach(function(card){ card.style.display = ''; });
-      lemastore.toast('Filtres réinitialisés (maquette).');
-    }
-    var applyBtn = document.getElementById('filterApply');
-    var resetBtn = document.getElementById('filterReset');
-    if(applyBtn) applyBtn.addEventListener('click', applyFilter);
-    if(resetBtn) resetBtn.addEventListener('click', resetFilter);
   })();
 </script>
 @endsection

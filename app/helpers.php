@@ -277,6 +277,7 @@ function tableau_html($t, $liste_entete, $liste_colonne, $btn = "", $num = true,
         }
         if ($btn != '') {
             $html .= '<td style="white-space:nowrap;">';
+            $actionsStart = strlen($html);
 
             if ((strpos($btn, 'retraitransfert') !== false) && ($v->idetat == 1)) {
                 $iddestination = is_array($v) ? ($v['iddestination'] ?? '') : ($v->iddestination ?? '');
@@ -297,7 +298,20 @@ function tableau_html($t, $liste_entete, $liste_colonne, $btn = "", $num = true,
 
             if ($config == 'expedition') {
                 if (strpos($btn, 'historique') !== false) {
-                    $html .= '<a href="#" class="btn btn-secondary btn-sm" onclick="ouvrirHistoriqueExpedition(\'' . $id . '\'); return false;" style="margin:0 2px; padding:6px 10px; font-size:14px;" title="Historique du colis" aria-label="Historique du colis"><i class="fa fa-history"></i></a>';
+                    $html .= '<a href="#" class="dropdown-item" onclick="ouvrirHistoriqueExpedition(\'' . $id . '\'); return false;"><i class="fa fa-history me-2"></i>Historique du colis</a>';
+                }
+                if (strpos($btn, 'historique-paiement') !== false) {
+                    $urlHistoriquePaiement = htmlspecialchars(url('expedition/' . $id . '/paiements'), ENT_QUOTES, 'UTF-8');
+                    $codeColis = htmlspecialchars((string) ($v->code ?? ''), ENT_QUOTES, 'UTF-8');
+                    $html .= '<button type="button" class="dropdown-item" data-codecolis="' . $codeColis . '" data-paiements-url="' . $urlHistoriquePaiement . '" onclick="ouvrirHistoriquePaiementColis(this);"><i class="fa fa-list-alt me-2"></i>Historique des paiements</button>';
+                }
+                if (strpos($btn, 'paymentcolis') !== false && mb_strtolower(trim((string) ($v->etat ?? ''))) !== 'retiré') {
+                    $urlEnregistrementPaiement = htmlspecialchars(route('paymentcolis.enregistrer'), ENT_QUOTES, 'UTF-8');
+                    $codeColis = htmlspecialchars((string) ($v->code ?? ''), ENT_QUOTES, 'UTF-8');
+                    $montantColis = htmlspecialchars((string) ($v->montant ?? 0), ENT_QUOTES, 'UTF-8');
+                    $totalPaiementsColis = htmlspecialchars((string) ($v->totalpaiementcolis ?? 0), ENT_QUOTES, 'UTF-8');
+                    $urlHistoriquePaiement = htmlspecialchars(url('expedition/' . $id . '/paiements'), ENT_QUOTES, 'UTF-8');
+                    $html .= '<button type="button" class="dropdown-item" data-idcolis="' . htmlspecialchars((string) $id, ENT_QUOTES, 'UTF-8') . '" data-codecolis="' . $codeColis . '" data-montantcolis="' . $montantColis . '" data-totalpaiements="' . $totalPaiementsColis . '" data-paiements-url="' . $urlHistoriquePaiement . '" data-enregistrement-url="' . $urlEnregistrementPaiement . '" onclick="ouvrirModalPaiementColis(this);"><i class="fa fa-credit-card me-2"></i>Paiement colis</button>';
                 }
                 $actionsExpedition = [
                     'envoicolis' => ['Envoi colis', 'fa-truck', 'btn-primary', 2],
@@ -324,11 +338,12 @@ function tableau_html($t, $liste_entete, $liste_colonne, $btn = "", $num = true,
                                 'nbrcolis' => $v->nbrcolis ?? '',
                                 'poids' => $v->poids ?? '',
                                 'montant' => $v->montant ?? '',
+                                'totalpaiementcolis' => $v->totalpaiementcolis ?? 0,
                                 'marque' => $v->marque ?? '',
                             ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT), ENT_QUOTES, 'UTF-8');
                             $details = ' data-expedition="' . $details . '"';
                         }
-                        $html .= '<a href="#" class="btn ' . $classe . ' btn-sm"' . $details . ' onclick="ouvrirModalHistoexpedition(\'' . $id . '\', \'' . $action . '\', this); return false;" style="margin:0 2px; padding:6px 10px; font-size:14px;" title="' . $libelle . '"><i class="fa ' . $icone . '"></i></a>';
+                        $html .= '<a href="#" class="dropdown-item"' . $details . ' onclick="ouvrirModalHistoexpedition(\'' . $id . '\', \'' . $action . '\', this); return false;"><i class="fa ' . $icone . ' me-2"></i>' . $libelle . '</a>';
                     }
                 }
             }
@@ -349,13 +364,25 @@ function tableau_html($t, $liste_entete, $liste_colonne, $btn = "", $num = true,
                 }
             }
             if ((strpos($btn, 'modifier') !== false) && ($maj == '1' || $maj == '')) {
-                $html .= '<a href="#" class="btn btn-warning btn-sm" onclick="modifier(\'' . $cfmodif . '\',\'' . $id . '\');" style="margin:0 2px; padding:6px 10px; font-size:14px;" title="Modifier"><i class="fa fa-edit"></i></a>';
+                $html .= $config === 'expedition'
+                    ? '<a href="#" class="dropdown-item" onclick="modifier(\'' . $cfmodif . '\',\'' . $id . '\'); return false;"><i class="fa fa-edit me-2"></i>Modifier</a>'
+                    : '<a href="#" class="btn btn-warning btn-sm" onclick="modifier(\'' . $cfmodif . '\',\'' . $id . '\');" style="margin:0 2px; padding:6px 10px; font-size:14px;" title="Modifier"><i class="fa fa-edit"></i></a>';
             }
             if ((strpos($btn, 'supprimer') !== false) && ($maj == '1' || $maj == '')) {
-                $html .= '<a href="#" class="btn btn-danger btn-sm" onclick="supprimer(\'' . $cfsuppr . '\',\'' . $id . '\');" style="margin:0 2px; padding:6px 10px; font-size:14px;" title="Supprimer"><i class="fa fa-trash"></i></a>';
+                $html .= $config === 'expedition'
+                    ? '<a href="#" class="dropdown-item text-danger" onclick="supprimer(\'' . $cfsuppr . '\',\'' . $id . '\'); return false;"><i class="fa fa-trash me-2"></i>Supprimer</a>'
+                    : '<a href="#" class="btn btn-danger btn-sm" onclick="supprimer(\'' . $cfsuppr . '\',\'' . $id . '\');" style="margin:0 2px; padding:6px 10px; font-size:14px;" title="Supprimer"><i class="fa fa-trash"></i></a>';
             }
             if (strpos($btn, 'reinitialiser') !== false) {
                 $html .= '<a href="#" class="btn btn-secondary btn-sm" onclick="reinitialiser(\'' . $id . '\');" style="margin:0 2px; padding:6px 10px; font-size:14px;" title="Réinitialiser le mot de passe"><i class="fa fa-key"></i></a>';
+            }
+
+            if ($config === 'expedition') {
+                $actions = substr($html, $actionsStart);
+                $html = substr($html, 0, $actionsStart);
+                if ($actions !== '') {
+                    $html .= '<div class="dropdown expedition-actions"><button type="button" class="btn btn-outline-primary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Actions du colis"><i class="fa fa-ellipsis-h me-1"></i>Actions</button><div class="dropdown-menu dropdown-menu-end expedition-actions-menu">' . $actions . '</div></div>';
+                }
             }
            
             $html .= '</td>';

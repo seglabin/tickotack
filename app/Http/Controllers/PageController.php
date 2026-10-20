@@ -5,6 +5,10 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class PageController extends Controller
 {
@@ -79,23 +83,53 @@ class PageController extends Controller
 
     public function home()
     {
-        $rekslider = " SELECT * FROM articles WHERE carousel = true ORDER BY libelle LIMIT 4 ";
-        $sliders = collect(DB::select($rekslider));
-// dd($sliders);
-        $rekcategtop = " SELECT c.*, COALESCE( (SELECT COUNT('a.id') FROM articles a WHERE idcategorie = c.id GROUP BY idcategorie),0) nbprod ";
-        $rekcategtop .= " FROM categories c WHERE top = true AND visible = true ORDER BY libelle ";
-        $categtop = collect(DB::select($rekcategtop));
-        $categvisible = collect(DB::select(" SELECT * FROM categories WHERE visible = true ORDER BY libelle "));
+        $sliders = DB::table('articles')
+            ->where('carousel', true)
+            ->orderBy('libelle')
+            ->limit(4)
+            ->get();
+
+        $categtop = collect(DB::select("
+            SELECT c.*,
+                   (SELECT COUNT(*) FROM articles a WHERE a.idcategorie = c.id) AS nbprod
+            FROM categories c
+            WHERE c.top = true AND c.visible = true
+            ORDER BY c.libelle
+        "));
+        $categvisible = DB::table('categories')
+            ->where('visible', true)
+            ->orderBy('libelle')
+            ->get();
+        $homeProducts = DB::table('articles as a')
+            ->leftJoin('marques as m', 'm.id', '=', 'a.idmarque')
+            ->select('a.*', DB::raw("COALESCE(m.libelle, '') AS libmarque"))
+            ->orderByDesc('a.id')
+            ->limit(24)
+            ->get();
+        $homeCategories = $categvisible
+            ->filter(fn ($category) => $homeProducts->contains('idcategorie', $category->id))
+            ->values();
+        $homeBrands = DB::table('marques')
+            ->where('visible', true)
+            ->orderBy('libelle')
+            ->limit(12)
+            ->get();
         $user = Auth::check() ? Auth::user() : null;
 
         $config = session('config') ?? 'site';
 
-        //dd($user);
         if ($user != null && $config != 'site') {
             return view('back.accueilA');
-        } else
-            // Home reste “template-first”. On n’injecte des donnees que si tu veux rendre certaines sections dynamiques plus tard.
-            return view('pages.home', compact('sliders', 'categtop', 'categvisible'));
+        }
+
+        return view('pages.home', compact(
+            'sliders',
+            'categtop',
+            'categvisible',
+            'homeProducts',
+            'homeCategories',
+            'homeBrands'
+        ));
     }
 
     public function suivicoli()
@@ -237,22 +271,91 @@ class PageController extends Controller
     }
 
 
-    public function category(string $slug = null)
+    public function category(Request $request, ?string $slug = null)
     {
-        $catalog = $this->catalog();
-        // $currentCategory = null;
-        // foreach ($catalog['categories'] as $c) {
-        //     if ($slug && $c['slug'] === $slug) { $currentCategory = $c; break; }
-        // }
+        $filters = $request->validate([
+            'brand' => [
+                'nullable',
+                'integer',
+                Rule::exists('marques', 'id')->where(fn ($query) => $query->where('visible', true)),
+            ],
+            'min_price' => ['nullable', 'numeric', 'min:0'],
+            'max_price' => ['nullable', 'numeric', 'min:0', 'gte:min_price'],
+            'sort' => ['nullable', Rule::in(['popular', 'name', 'priceAsc', 'priceDesc'])],
+        ]);
 
-        $currentCategory = collect(DB::select(" SELECT * FROM categories WHERE id = '" . $slug . "' "))->first();
-        // dd($currentCategory);
+        $currentCategory = $slug === null
+            ? null
+            : DB::table('categories')->where('id', $slug)->first();
+
+        $categories = DB::table('categories as c')
+            ->where('c.visible', true)
+            ->select('c.*')
+            ->selectSub(
+                DB::table('articles as category_articles')
+                    ->selectRaw('COUNT(*)')
+                    ->whereColumn('category_articles.idcategorie', 'c.id'),
+                'nbprod'
+            )
+            ->orderBy('c.libelle')
+            ->get();
+
+        $brandsQuery = DB::table('marques as m')
+            ->join('articles as brand_articles', 'brand_articles.idmarque', '=', 'm.id')
+            ->where('m.visible', true)
+            ->select('m.id', 'm.libelle')
+            ->distinct()
+            ->orderBy('m.libelle');
+        if ($slug !== null) {
+            $brandsQuery->where('brand_articles.idcategorie', $slug);
+        }
+        $brands = $brandsQuery->get();
+
+        $productsQuery = DB::table('articles as a')
+            ->leftJoin('marques as m', 'm.id', '=', 'a.idmarque')
+            ->select('a.*', DB::raw("COALESCE(m.libelle, '') AS libmarque"));
+        if ($slug !== null) {
+            $productsQuery->where('a.idcategorie', $slug);
+        }
+        if (!empty($filters['brand'])) {
+            $productsQuery->where('a.idmarque', $filters['brand']);
+        }
+        if (isset($filters['min_price']) && $filters['min_price'] !== '') {
+            $productsQuery->where('a.prix', '>=', $filters['min_price']);
+        }
+        if (isset($filters['max_price']) && $filters['max_price'] !== '') {
+            $productsQuery->where('a.prix', '<=', $filters['max_price']);
+        }
+
+        switch ($filters['sort'] ?? 'popular') {
+            case 'name':
+                $productsQuery->orderBy('a.libelle')->orderBy('a.id');
+                break;
+            case 'priceAsc':
+                $productsQuery->orderBy('a.prix')->orderBy('a.id');
+                break;
+            case 'priceDesc':
+                $productsQuery->orderByDesc('a.prix')->orderByDesc('a.id');
+                break;
+            default:
+                $productsQuery->orderByDesc('a.created_at')->orderByDesc('a.id');
+                break;
+        }
+
+        $products = $productsQuery->paginate(12)->withQueryString();
+
         return view('pages.category', [
             'slug' => $slug,
-            'categories' => $catalog['categories'],
-            'brands' => $catalog['brands'],
+            'categories' => $categories,
+            'brands' => $brands,
             'currentCategory' => $currentCategory,
-            'products' => $this->productsByCategory($slug),
+            'products' => $products,
+            'filters' => [
+                'brand' => (string) ($filters['brand'] ?? ''),
+                'min_price' => $filters['min_price'] ?? '',
+                'max_price' => $filters['max_price'] ?? '',
+                'sort' => $filters['sort'] ?? 'popular',
+            ],
         ]);
     }
 
@@ -322,8 +425,214 @@ class PageController extends Controller
 
     public function checkout()
     {
-        $panier = session('panier') != null ? session('panier')  : array();
+        $panier = session('panier', []);
+        if (!is_array($panier) || $panier === []) {
+            return redirect()->route('cart')->with('error', 'Votre panier est vide.');
+        }
 
-        return view('pages.checkout', compact('panier'));
+        try {
+            $cart = $this->normalizeCheckoutCart($panier);
+        } catch (ValidationException $exception) {
+            return redirect()->route('cart')->with('error', $exception->errors()['panier'][0]);
+        }
+
+        session(['panier' => $cart['items']]);
+        $panier = $cart['items'];
+        $subtotal = $cart['subtotal'];
+        $typesLivraison = DB::table('elements')
+            ->where('nomtable', 'typelivraison')
+            ->orderBy('libelle')
+            ->get();
+
+        return view('pages.checkout', compact('panier', 'subtotal', 'typesLivraison'));
+    }
+
+    public function placeOrder(Request $request)
+    {
+        $panier = session('panier', []);
+        if (!is_array($panier) || $panier === []) {
+            return redirect()->route('cart')->with('error', 'Votre panier est vide.');
+        }
+
+        $validated = $request->validate([
+            'nom' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255'],
+            'telephone' => ['required', 'string', 'max:20'],
+            'idtypelivraison' => [
+                'required',
+                'integer',
+                Rule::exists('elements', 'id')->where(fn ($query) => $query->where('nomtable', 'typelivraison')),
+            ],
+            'adresse' => ['nullable', 'string', 'max:255'],
+            'ville' => ['nullable', 'string', 'max:255'],
+            'pays' => ['nullable', 'string', 'max:100'],
+            'observation' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $typeLivraison = DB::table('elements')->where('id', $validated['idtypelivraison'])->first();
+        $retraitClient = Str::lower(trim($typeLivraison->libelle)) === Str::lower('Moi même');
+        if (!$retraitClient) {
+            $validated = array_merge($validated, $request->validate([
+                'adresse' => ['required', 'string', 'max:255'],
+                'ville' => ['required', 'string', 'max:255'],
+                'pays' => ['required', 'string', 'max:100'],
+            ]));
+        }
+
+        try {
+            $cart = $this->normalizeCheckoutCart($panier);
+        } catch (ValidationException $exception) {
+            return redirect()->route('cart')->with('error', $exception->errors()['panier'][0]);
+        }
+
+        $fraisLivraison = $retraitClient ? 0 : 2.50;
+        $taxe = round($cart['subtotal'] * 0.18, 2);
+        $total = round($cart['subtotal'] + $fraisLivraison + $taxe, 2);
+        $reference = (string) Str::uuid();
+
+        DB::transaction(function () use ($validated, $cart, $retraitClient, $fraisLivraison, $taxe, $total, $reference) {
+            $client = DB::table('clients')->where('email', $validated['email'])->first();
+            if ($client === null) {
+                $clientId = DB::table('clients')->insertGetId([
+                    'nom' => $validated['nom'],
+                    'telephone' => $validated['telephone'],
+                    'email' => $validated['email'],
+                    'adresgeo' => $retraitClient ? null : $validated['adresse'],
+                    'compte' => 'guest-' . Str::uuid(),
+                    'password' => Hash::make(Str::random(40)),
+                    'desactif' => false,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            } else {
+                $clientId = $client->id;
+            }
+
+            $orderId = DB::table('commandes')->insertGetId([
+                'datecmd' => now(),
+                'observation' => $validated['observation'] ?? null,
+                'idclient' => $clientId,
+                'idtypelivraison' => $validated['idtypelivraison'],
+                'reference' => $reference,
+                'nomclient' => $validated['nom'],
+                'emailclient' => $validated['email'],
+                'telephoneclient' => $validated['telephone'],
+                'adresse_livraison' => $retraitClient ? null : ($validated['adresse'] ?? null),
+                'ville_livraison' => $retraitClient ? null : ($validated['ville'] ?? null),
+                'pays_livraison' => $retraitClient ? null : ($validated['pays'] ?? null),
+                'methode_paiement' => 'paiement_a_la_livraison',
+                'sous_total' => $cart['subtotal'],
+                'frais_livraison' => $fraisLivraison,
+                'taxe' => $taxe,
+                'total' => $total,
+                'statut' => 'En attente',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            foreach ($cart['items'] as $item) {
+                DB::table('paniers')->insert([
+                    'qte' => $item['qte'],
+                    'pu' => $item['pu'],
+                    'idcmd' => $orderId,
+                    'idarticle' => $item['idproduit'],
+                    'libelle' => $item['libelle'],
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+
+            $etatInitial = DB::table('elements')
+                ->where('nomtable', 'etat')
+                ->where('libelle', 'Enregistrement')
+                ->value('id');
+            if ($etatInitial !== null) {
+                DB::table('historiquecmds')->insert([
+                    'dateheure' => now(),
+                    'observation' => 'Commande enregistrée sur la boutique en ligne.',
+                    'idcmd' => $orderId,
+                    'idetat' => $etatInitial,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        });
+
+        session()->forget('panier');
+
+        return redirect()->route('order.confirmation', ['reference' => $reference]);
+    }
+
+    public function orderConfirmation(string $reference)
+    {
+        $commande = DB::table('commandes as c')
+            ->join('elements as el', 'el.id', '=', 'c.idtypelivraison')
+            ->where('c.reference', $reference)
+            ->select('c.*', 'el.libelle as typelivraison')
+            ->first();
+
+        abort_if($commande === null, 404);
+
+        $articles = DB::table('paniers')
+            ->where('idcmd', $commande->id)
+            ->orderBy('id')
+            ->get();
+
+        return view('pages.order-confirmation', compact('commande', 'articles'));
+    }
+
+    private function normalizeCheckoutCart(array $panier): array
+    {
+        if ($panier === []) {
+            throw ValidationException::withMessages(['panier' => 'Votre panier est vide.']);
+        }
+
+        $ids = [];
+        foreach ($panier as $item) {
+            if (!is_array($item) || !isset($item['idproduit']) || !ctype_digit((string) $item['idproduit'])) {
+                throw ValidationException::withMessages(['panier' => 'Un produit de votre panier n’est plus valide.']);
+            }
+
+            $quantite = filter_var($item['qte'] ?? null, FILTER_VALIDATE_INT);
+            if ($quantite === false || $quantite < 1) {
+                throw ValidationException::withMessages(['panier' => 'La quantité d’un produit de votre panier n’est pas valide.']);
+            }
+
+            $ids[] = (int) $item['idproduit'];
+        }
+
+        $products = DB::table('articles as a')
+            ->leftJoin('categories as c', 'c.id', '=', 'a.idcategorie')
+            ->leftJoin('marques as m', 'm.id', '=', 'a.idmarque')
+            ->whereIn('a.id', $ids)
+            ->select('a.id', 'a.libelle', 'a.prix', 'a.photo1', 'c.libelle as libcategorie', 'm.libelle as libmarque')
+            ->get()
+            ->keyBy('id');
+
+        $items = [];
+        $subtotal = 0;
+        foreach ($panier as $item) {
+            $product = $products->get((int) $item['idproduit']);
+            if ($product === null) {
+                throw ValidationException::withMessages(['panier' => 'Un produit de votre panier n’est plus disponible.']);
+            }
+
+            $quantite = (int) $item['qte'];
+            $prix = round((float) $product->prix, 2);
+            $montant = round($prix * $quantite, 2);
+            $items[] = [
+                'idproduit' => $product->id,
+                'libelle' => $product->libelle,
+                'photo' => 'storage/images/Articles/' . $product->photo1,
+                'libcategorie' => $product->libcategorie,
+                'libmarque' => $product->libmarque,
+                'pu' => $prix,
+                'qte' => $quantite,
+                'montant' => $montant,
+            ];
+            $subtotal += $montant;
+        }
+
+        return ['items' => $items, 'subtotal' => round($subtotal, 2)];
     }
 }

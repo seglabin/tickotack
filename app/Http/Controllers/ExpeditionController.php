@@ -69,6 +69,7 @@ class ExpeditionController extends Controller
 
             $donnees = collect(DB::select("
                 SELECT e.id, e.code, e.datenreg, e.montant, e.marque, e.poids, e.nbrcolis, e.idetat,
+                       COALESCE((SELECT SUM(pc.montant) FROM paymentcolis pc WHERE pc.idcolis = e.id), 0) AS totalpaiementcolis,
                        CASE 
                           WHEN e.idetat = 1 THEN '1'
                           ELSE '0'
@@ -105,9 +106,11 @@ class ExpeditionController extends Controller
             $adresses = adresse::orderBy('libelle')->get();
 
             $nouv = $listeRetraits ? null : '/ajout-expedition';
-            $entete = 'Date|Code|Expéditeur|Trajet|Montant|Poids|Statut|Conteneur';
-            $cols = 'datenreg|code|expediteur|trajet|montant|poids|etat|conteneur';
-            $btn = $listeRetraits ? 'historique|retraitcolis' : 'modifier|historique|supprimer';
+            $entete = 'Date|Code|Trajet|Montant|Statut|Conteneur';
+            $cols = 'datenreg|code|trajet|montant|etat|conteneur';
+            // $entete = 'Date|Code|Expéditeur|Trajet|Montant|Poids|Statut|Conteneur';
+            // $cols = 'datenreg|code|expediteur|trajet|montant|poids|etat|conteneur';
+            $btn = $listeRetraits ? 'historique|historique-paiement|retraitcolis' : 'modifier|historique|supprimer|paymentcolis|historique-paiement';
             // $btn = 'modifier|retraitcolis|supprimer|envoicolis|passagedouane|arrivemagasin';
 
             session(['config' => 'expedition']);

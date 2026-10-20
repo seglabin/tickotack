@@ -255,6 +255,186 @@ if(empty($conteneurs)) {
 
 @section('modals')
 @if($config === 'expedition')
+<div class="modal fade" id="modalPaiementColis" tabindex="-1" aria-labelledby="modalPaiementColisLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalPaiementColisLabel">Paiement du colis</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+      </div>
+      <div class="modal-body">
+        <div id="paiementColisDetails" class="alert alert-info"></div>
+        <div id="alertPaiementColis" class="alert d-none" role="alert"></div>
+        <form id="formPaiementColis" method="POST" action="{{ route('paymentcolis.enregistrer') }}">
+          @csrf
+          <input type="hidden" id="paiement_idcolis" name="idcolis">
+          <div class="mb-3">
+            <label for="paiement_montant" class="form-label">Montant payé (CFA) (*)</label>
+            <input type="number" class="form-control" id="paiement_montant" name="montant" min="0.01" step="0.01" required>
+          </div>
+          <div class="mb-3">
+            <label for="paiement_date" class="form-label">Date du paiement (*)</label>
+            <input type="datetime-local" class="form-control" id="paiement_date" name="payment_date" value="{{ now()->format('Y-m-d\TH:i') }}" required>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+        <button type="button" class="btn btn-success" id="btnEnregistrerPaiementColis" onclick="enregistrerPaiementColis();">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modalHistoriquePaiementColis" tabindex="-1" aria-labelledby="modalHistoriquePaiementColisLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalHistoriquePaiementColisLabel">Historique des paiements du colis</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+      </div>
+      <div class="modal-body">
+        <div id="historiquePaiementColisChargement" class="text-center py-3 d-none">Chargement des paiements...</div>
+        <div id="historiquePaiementColisMessage" class="alert d-none" role="status"></div>
+        <div id="historiquePaiementColisContenu"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function formaterMontantPaiement(montant) {
+    return Number(montant || 0).toLocaleString('fr-FR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }) + ' CFA';
+  }
+
+  function dateLocalePaiement() {
+    const date = new Date();
+    const pad = valeur => String(valeur).padStart(2, '0');
+    return date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate()) +
+      'T' + pad(date.getHours()) + ':' + pad(date.getMinutes());
+  }
+
+  function ouvrirModalPaiementColis(bouton) {
+    const form = document.getElementById('formPaiementColis');
+    const total = Number(bouton.dataset.montantcolis || 0);
+    const paye = Number(bouton.dataset.totalpaiements || 0);
+    form.reset();
+    form.action = bouton.dataset.enregistrementUrl;
+    document.getElementById('paiement_idcolis').value = bouton.dataset.idcolis;
+    document.getElementById('paiement_date').value = dateLocalePaiement();
+    document.getElementById('paiementColisDetails').textContent =
+      'Colis ' + bouton.dataset.codecolis + ' — Montant : ' + formaterMontantPaiement(total) +
+      ' — Déjà payé : ' + formaterMontantPaiement(paye) +
+      ' — Solde : ' + formaterMontantPaiement(Math.max(0, total - paye));
+    const alertBox = document.getElementById('alertPaiementColis');
+    alertBox.className = 'alert d-none';
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('modalPaiementColis')).show();
+  }
+
+  function ouvrirHistoriquePaiementColis(bouton) {
+    const modal = document.getElementById('modalHistoriquePaiementColis');
+    const chargement = document.getElementById('historiquePaiementColisChargement');
+    const message = document.getElementById('historiquePaiementColisMessage');
+    const contenu = document.getElementById('historiquePaiementColisContenu');
+    chargement.classList.remove('d-none');
+    message.className = 'alert d-none';
+    contenu.replaceChildren();
+    document.getElementById('modalHistoriquePaiementColisLabel').textContent =
+      'Historique des paiements — Colis ' + bouton.dataset.codecolis;
+    bootstrap.Modal.getOrCreateInstance(modal).show();
+
+    fetch(bouton.dataset.paiementsUrl, {
+      headers: { 'Accept': 'application/json' }
+    })
+      .then(function (response) {
+        return response.json().then(function (data) {
+          if (!response.ok) throw new Error(data.message || 'Impossible de charger les paiements.');
+          return data;
+        });
+      })
+      .then(function (data) {
+        if (!data.paiements.length) {
+          message.textContent = 'Aucun paiement enregistré pour ce colis.';
+          message.className = 'alert alert-info';
+          return;
+        }
+
+        const table = document.createElement('table');
+        table.className = 'table table-bordered table-striped align-middle mb-0';
+        const entete = table.createTHead().insertRow();
+        ['Date du paiement', 'Montant (CFA)'].forEach(function (libelle) {
+          const cellule = document.createElement('th');
+          cellule.scope = 'col';
+          cellule.textContent = libelle;
+          entete.appendChild(cellule);
+        });
+        const corps = table.createTBody();
+        data.paiements.forEach(function (paiement) {
+          const ligne = corps.insertRow();
+          ligne.insertCell().textContent = paiement.payment_date || '';
+          ligne.insertCell().textContent = formaterMontantPaiement(paiement.montant);
+        });
+        const total = corps.insertRow();
+        total.insertCell().textContent = 'Total payé';
+        total.insertCell().textContent = formaterMontantPaiement(data.total);
+        contenu.appendChild(table);
+      })
+      .catch(function (erreur) {
+        message.textContent = erreur.message;
+        message.className = 'alert alert-danger';
+      })
+      .finally(function () {
+        chargement.classList.add('d-none');
+      });
+  }
+
+  function enregistrerPaiementColis() {
+    const form = document.getElementById('formPaiementColis');
+    const bouton = document.getElementById('btnEnregistrerPaiementColis');
+    const alertBox = document.getElementById('alertPaiementColis');
+    if (!form.reportValidity()) return;
+
+    bouton.disabled = true;
+    bouton.textContent = 'Enregistrement...';
+    fetch(form.action, {
+      method: 'POST',
+      headers: {
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+        'Accept': 'application/json'
+      },
+      body: new FormData(form)
+    })
+      .then(function (response) {
+        return response.json().then(function (data) {
+          if (!response.ok || !data.success) {
+            const erreurs = data.errors ? Object.values(data.errors).flat().join(' ') : '';
+            throw new Error(erreurs || data.message || 'Erreur lors de l’enregistrement du paiement.');
+          }
+          return data;
+        });
+      })
+      .then(function (data) {
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('modalPaiementColis')).hide();
+        alert(data.message);
+        window.location.reload();
+      })
+      .catch(function (erreur) {
+        alertBox.textContent = erreur.message;
+        alertBox.className = 'alert alert-danger';
+      })
+      .finally(function () {
+        bouton.disabled = false;
+        bouton.textContent = 'Enregistrer';
+      });
+  }
+</script>
+
 <div class="modal fade" id="modalHistoriqueExpedition" tabindex="-1" aria-labelledby="modalHistoriqueExpeditionLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-scrollable">
     <div class="modal-content">
@@ -484,7 +664,10 @@ if(empty($conteneurs)) {
     detailsContainer.classList.toggle('d-none', !retraitColis);
     if (retraitColis && bouton?.dataset.expedition) {
       const expedition = JSON.parse(bouton.dataset.expedition);
-      montantPayeInput.value = expedition.montant ?? '';
+      montantPayeInput.value = Math.max(
+        0,
+        Number(expedition.montant || 0) - Number(expedition.totalpaiementcolis || 0)
+      ).toFixed(2);
       const titre = document.createElement('strong');
       titre.textContent = 'Expédition ' + (expedition.code || '');
       detailsContainer.appendChild(titre);

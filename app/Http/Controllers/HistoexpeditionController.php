@@ -119,11 +119,29 @@ class HistoexpeditionController extends Controller
             'datetat' => ['required', 'date'],
             'reference' => ['nullable', 'string', 'max:255'],
             'idconteneur' => ['exclude_unless:action,envoicolis', 'required', 'integer', 'exists:conteneurs,id'],
-            'montantpaye' => ['exclude_unless:action,retraitcolis', 'required', 'numeric', 'min:0'],
+            'montantpaye' => ['exclude_unless:action,retraitcolis', 'required', 'numeric', 'min:0', 'decimal:0,2'],
         ]);
 
         try {
-            $histo = DB::transaction(function () use ($donnees, $actions) {
+            $resultat = DB::transaction(function () use ($donnees, $actions) {
+                if ($donnees['action'] === 'retraitcolis') {
+                    $expedition = expedition::whereKey($donnees['idexpedition'])
+                        ->lockForUpdate()
+                        ->firstOrFail();
+                    $totalPaiements = (float) DB::table('paymentcolis')
+                        ->where('idcolis', $expedition->id)
+                        ->sum('montant');
+                    $solde = max(0, (float) $expedition->montant - $totalPaiements);
+
+                    if ((float) $donnees['montantpaye'] > $solde + 0.000001) {
+                        return [
+                            'success' => false,
+                            'status' => 422,
+                            'message' => 'Le montant payé au retrait ne peut pas dépasser le solde du colis (' . number_format($solde, 2, ',', ' ') . ' CFA).',
+                        ];
+                    }
+                }
+
                 $etat = element::firstOrCreate([
                     'nomtable' => 'etat',
                     'libelle' => $actions[$donnees['action']],
@@ -148,8 +166,17 @@ class HistoexpeditionController extends Controller
                     ]);
                 }
 
-                return $histo;
+                return ['success' => true, 'histo' => $histo];
             });
+
+            if (!$resultat['success']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $resultat['message'],
+                ], $resultat['status']);
+            }
+
+            $histo = $resultat['histo'];
 
             return response()->json([
                 'success' => true,

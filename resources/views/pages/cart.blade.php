@@ -16,6 +16,10 @@
 
   <h1>Panier</h1>
 
+  @if(session('error'))
+    <div class="alert alert-danger" role="alert">{{ session('error') }}</div>
+  @endif
+
   @if($panier == null)
     <p>Votre panier est vide.</p>
     <div class="buttons">

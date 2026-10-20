@@ -211,6 +211,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/expedition', 'App\Http\Controllers\ExpeditionController@index')->name('expedition');
     Route::get('/expedition/{id}/historique', 'App\Http\Controllers\HistoexpeditionController@historique')->name('expedition.historique');
     Route::get('/expedition/{id}/recu-retrait', 'App\Http\Controllers\HistoexpeditionController@recuRetrait')->name('expedition.recu-retrait');
+    Route::get('/expedition/{id}/paiements', 'App\Http\Controllers\PaymentcoliController@historique')->name('paymentcolis.historique');
+    Route::post('/enregistrer-paymentcolis', 'App\Http\Controllers\PaymentcoliController@enregistrer')->name('paymentcolis.enregistrer');
     Route::get('/retrait-colis', 'App\Http\Controllers\ExpeditionController@retraits')->name('expedition.retraits');
     Route::get('/ajout-expedition', 'App\Http\Controllers\ExpeditionController@form');
     Route::get('/modifier-expedition/{id}', 'App\Http\Controllers\ExpeditionController@formModif');
@@ -269,6 +271,8 @@ Route::get('/category/{slug?}', [App\Http\Controllers\PageController::class, 'ca
 Route::get('/product/{slug?}', [App\Http\Controllers\PageController::class, 'product'])->name('product'); //ok
 Route::get('/cart', [App\Http\Controllers\PageController::class, 'cart'])->name('cart'); //Ok
 Route::get('/checkout', [App\Http\Controllers\PageController::class, 'checkout'])->name('checkout'); //4
+Route::post('/checkout', [App\Http\Controllers\PageController::class, 'placeOrder'])->name('checkout.place-order');
+Route::get('/commande/confirmation/{reference}', [App\Http\Controllers\PageController::class, 'orderConfirmation'])->name('order.confirmation');
 Route::get('/suivi-colis', [App\Http\Controllers\PageController::class, 'suivicoli'])->name('suivicoli');
 Route::get('/api/suivi-colis', [App\Http\Controllers\PageController::class, 'rechercherSuiviColis'])->name('suivi-colis.recherche');
 
