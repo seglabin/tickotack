@@ -22,7 +22,7 @@ return new class extends Migration
             $table->foreign('idconsignataire')
                 ->references('id')
                 ->on('elements')
-                ->onDelete('cascade')
+               ->onDelete('set null')
                 ->onUpdate('cascade');
             $table->timestamps();
         });

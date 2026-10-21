@@ -54,9 +54,9 @@ $nbre = count($panier);
 
       <div id="top-links" class="col-sm-7 col-lg-7 col-md-8 col-xs-5 text-right">
         <ul class="list-inline pull-right">
-          <li class="hidden-sm hidden-xs">
+          <!-- <li class="hidden-sm hidden-xs">
             <b>COUPON :</b> GROCERY10OFF
-          </li>
+          </li> -->
 
           <li class="dropdown">
             <a href="#" class="dropdown-toggle" data-toggle="dropdown" title="My Account">
@@ -89,13 +89,13 @@ $nbre = count($panier);
           <li>
             <div class="btn-group">
               <button class="btn btn-link dropdown-toggle" data-toggle="dropdown">
-                <img src="{{ asset('catalog/language/en-gb/en-gb.png') }}" alt="English" title="English">
+                <img src="{{ asset('templateFront/catalog/language/fr-fr/fr-fr.png') }}" alt="French" title="French">
                 <span class="hidden-xs">Language</span>&nbsp;<i class="fa fa-angle-down"></i>
               </button>
               <ul class="dropdown-menu dropdown-menu-right">
-                <li><button class="btn btn-link btn-block" type="button" onclick="return false;"><img src="{{ asset('catalog/language/fr-fr/fr-fr.png') }}" alt="French"> French</button></li>
-                <li><button class="btn btn-link btn-block" type="button" onclick="return false;"><img src="{{ asset('catalog/language/en-gb/en-gb.png') }}" alt="English"> English</button></li>
-                <li><button class="btn btn-link btn-block" type="button" onclick="return false;"><img src="{{ asset('catalog/language/es-es/es-es.png') }}" alt="Spanish"> Spanish</button></li>
+                <li><button class="btn btn-link btn-block" type="button" onclick="return false;"><img src="{{ asset('templateFront/catalog/language/fr-fr/fr-fr.png') }}" alt="French"> French</button></li>
+                <li><button class="btn btn-link btn-block" type="button" onclick="return false;"><img src="{{ asset('templateFront/catalog/language/en-gb/en-gb.png') }}" alt="English"> English</button></li>
+                <li><button class="btn btn-link btn-block" type="button" onclick="return false;"><img src="{{ asset('templateFront/catalog/language/es-es/es-es.png') }}" alt="Spanish"> Spanish</button></li>
               </ul>
             </div>
           </li>
@@ -113,7 +113,9 @@ $nbre = count($panier);
       <div class="col-sm-3 col-md-3">
         <div id="logo">
           <a href="{{ route('home') }}">
-            <img src="{{ asset('image/catalog/logo-2.png') }}" title="Global Vision" alt="Global Vision" class="img-responsive">
+            <span class="home-brand-logo" aria-label="Global Vision">
+              <i class="fa fa-leaf" aria-hidden="true"></i> Global Vision
+            </span>
           </a>
         </div>
       </div>
@@ -151,7 +153,7 @@ $nbre = count($panier);
           {{-- Container AJAX template (maquette) --}}
           <div class="search-ajax">
             <div class="ajax-loader-container" style="display:none;">
-              <img src="{{ asset('templateFront/image/catalog/loader.gif') }}" class="ajax-load-img" alt="loader">
+              <i class="fa fa-spinner fa-spin ajax-load-img" aria-hidden="true"></i>
             </div>
             <div class="ajax-result-container"></div>
           </div>
@@ -212,7 +214,7 @@ $nbre = count($panier);
       {{-- Call + Cart --}}
       <div class="col-lg-4 col-md-4 col-sm-4 text-right xs-cart">
         <a href="{{ route('contact') }}" class="hidden-sm hidden-xs hidden-md">
-          <img src="{{ asset('image/catalog/icon-call.png') }}" alt="call">
+          <img src="{{ asset('templateFront/image/catalog/icon-call.png') }}" alt="">
           <div class="cartco">
             <span>Contacter nous :</span><br>
             <span id="contact-phone">123456789</span>
@@ -221,7 +223,7 @@ $nbre = count($panier);
 
         <div id="cart" class="btn-group">
           <button data-toggle="dropdown" data-loading-text="Loading..." class="dropdown-toggle">
-            <img src="{{ asset('image/catalog/carti.png') }}" alt="cart">
+            <img src="{{ asset('templateFront/image/catalog/carti.png') }}" alt="">
             <div class="cartco">
               <span>Mon panier</span><br>
               <span id="cart-total"><span class="cartcount">{{$nbre}}</span>{{formatMontant($totalpanier)}}</span>

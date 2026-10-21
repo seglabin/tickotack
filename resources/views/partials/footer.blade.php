@@ -207,14 +207,14 @@
 
           <div class="col-lg-4 col-md-5 col-sm-5 col-xs-12">
             <ul class="list-inline list-unstyled foot-app">
-              <li><a href="#" onclick="return false;"><img class="img-responsive center-block" src="{{ asset('image/catalog/app1.png') }}" alt="app"></a></li>
-              <li><a href="#" onclick="return false;"><img class="img-responsive center-block" src="{{ asset('image/catalog/app2.png') }}" alt="app"></a></li>
-              <li><a href="#" onclick="return false;"><img class="img-responsive center-block" src="{{ asset('image/catalog/app3.png') }}" alt="app"></a></li>
+              <li><a href="#" onclick="return false;"><img class="img-responsive center-block" src="{{ asset('templateFront/image/catalog/app1.png') }}" alt="App Store"></a></li>
+              <li><a href="#" onclick="return false;"><img class="img-responsive center-block" src="{{ asset('templateFront/image/catalog/app2.png') }}" alt="Google Play"></a></li>
+              <li><a href="#" onclick="return false;"><img class="img-responsive center-block" src="{{ asset('templateFront/image/catalog/app3.png') }}" alt="Télécharger notre application"></a></li>
             </ul>
           </div>
 
           <div class="col-md-4 col-sm-3 col-xs-12 foot-pay text-right">
-            <img class="img-responsive pull-right" src="{{ asset('image/catalog/payment.png') }}" alt="imgpayment">
+            <img class="img-responsive pull-right" src="{{ asset('templateFront/image/catalog/payment.png') }}" alt="Moyens de paiement acceptés">
           </div>
 
         </div>

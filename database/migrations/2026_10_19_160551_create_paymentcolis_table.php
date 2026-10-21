@@ -19,8 +19,8 @@ return new class extends Migration
             $table->foreign('idcolis')
                 ->references('id')
                 ->on('expeditions')
-                ->onDelete('set null')
-                ->onUpdate('cascade'); 
+                ->onDelete('cascade')
+                ->onUpdate('restrict');
             $table->timestamps();
         });
     }

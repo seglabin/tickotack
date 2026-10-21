@@ -44,7 +44,7 @@
   <script src="{{ asset('templateFront/catalog/view/javascript/bootstrap/js/bootstrap.min.js') }}" type="text/javascript"></script>
   <script src="{{ asset('templateFront/catalog/view/javascript/jquery/swiper/js/swiper.jquery.js') }}" type="text/javascript"></script>
   <script src="{{ asset('templateFront/catalog/view/javascript/jquery/swiper/js/owl.carousel.min.js') }}" type="text/javascript"></script>
-
+<link rel="shortcut icon" type="image/x-icon" href="{{ asset('assets/templeApexa/img/favicon.png')}}" />
   @stack('head')
 </head>
 
