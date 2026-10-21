@@ -364,14 +364,10 @@ function tableau_html($t, $liste_entete, $liste_colonne, $btn = "", $num = true,
                 }
             }
             if ((strpos($btn, 'modifier') !== false) && ($maj == '1' || $maj == '')) {
-                if ($config === 'utilisateur') {
-                    $urlModifier = htmlspecialchars(route('utilisateur.modifier', ['id' => $id]), ENT_QUOTES, 'UTF-8');
-                    $html .= '<a href="' . $urlModifier . '" class="btn btn-warning btn-sm" style="margin:0 2px; padding:6px 10px; font-size:14px;" title="Modifier"><i class="fa fa-edit"></i></a>';
-                } else {
-                    $html .= $config === 'expedition'
-                        ? '<a href="#" class="dropdown-item" onclick="modifier(\'' . $cfmodif . '\',\'' . $id . '\'); return false;"><i class="fa fa-edit me-2"></i>Modifier</a>'
-                        : '<a href="#" class="btn btn-warning btn-sm" onclick="modifier(\'' . $cfmodif . '\',\'' . $id . '\');" style="margin:0 2px; padding:6px 10px; font-size:14px;" title="Modifier"><i class="fa fa-edit"></i></a>';
-                }
+                $urlModifier = htmlspecialchars(url($cfmodif . '/' . $id), ENT_QUOTES, 'UTF-8');
+                $html .= $config === 'expedition'
+                    ? '<a href="' . $urlModifier . '" class="dropdown-item"><i class="fa fa-edit me-2"></i>Modifier</a>'
+                    : '<a href="' . $urlModifier . '" class="btn btn-warning btn-sm" style="margin:0 2px; padding:6px 10px; font-size:14px;" title="Modifier"><i class="fa fa-edit"></i></a>';
             }
             if ((strpos($btn, 'supprimer') !== false) && ($maj == '1' || $maj == '')) {
                 if ($config === 'utilisateur') {
