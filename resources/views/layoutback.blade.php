@@ -111,6 +111,26 @@
 				@include('back.modalResetPassword')
 			@endif
 		  @endauth
+        <script>
+            (function () {
+                function hidePreloader() {
+                    var preloader = document.getElementById('preloader');
+                    if (preloader) {
+                        preloader.style.display = 'none';
+                        preloader.setAttribute('aria-hidden', 'true');
+                    }
+                }
+
+                if (document.readyState === 'complete') {
+                    hidePreloader();
+                } else {
+                    window.addEventListener('load', hidePreloader, { once: true });
+                }
+
+                window.addEventListener('pageshow', hidePreloader);
+                window.setTimeout(hidePreloader, 2500);
+            })();
+        </script>
 	</body>
 
 <!-- Mirrored from apexa-html-demo.vercel.app/ by HTTrack Website Copier/3.x [XR&CO'2014], Sat, 07 Sep 2024 20:34:46 GMT -->

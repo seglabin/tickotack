@@ -3824,7 +3824,7 @@ a.thumbnail.active, a.thumbnail:focus, a.thumbnail:hover{
 #page-preloader{
     display: none;
 }
-#page-preloader{
+#page-preloader.visible {
     display: block;
 }
 /* quickview */
@@ -3966,4 +3966,3 @@ border-radius: 4px;
 margin-top: 0px;
 margin-bottom: 0;
 }
-

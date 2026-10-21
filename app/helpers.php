@@ -364,17 +364,31 @@ function tableau_html($t, $liste_entete, $liste_colonne, $btn = "", $num = true,
                 }
             }
             if ((strpos($btn, 'modifier') !== false) && ($maj == '1' || $maj == '')) {
-                $html .= $config === 'expedition'
-                    ? '<a href="#" class="dropdown-item" onclick="modifier(\'' . $cfmodif . '\',\'' . $id . '\'); return false;"><i class="fa fa-edit me-2"></i>Modifier</a>'
-                    : '<a href="#" class="btn btn-warning btn-sm" onclick="modifier(\'' . $cfmodif . '\',\'' . $id . '\');" style="margin:0 2px; padding:6px 10px; font-size:14px;" title="Modifier"><i class="fa fa-edit"></i></a>';
+                if ($config === 'utilisateur') {
+                    $urlModifier = htmlspecialchars(route('utilisateur.modifier', ['id' => $id]), ENT_QUOTES, 'UTF-8');
+                    $html .= '<a href="' . $urlModifier . '" class="btn btn-warning btn-sm" style="margin:0 2px; padding:6px 10px; font-size:14px;" title="Modifier"><i class="fa fa-edit"></i></a>';
+                } else {
+                    $html .= $config === 'expedition'
+                        ? '<a href="#" class="dropdown-item" onclick="modifier(\'' . $cfmodif . '\',\'' . $id . '\'); return false;"><i class="fa fa-edit me-2"></i>Modifier</a>'
+                        : '<a href="#" class="btn btn-warning btn-sm" onclick="modifier(\'' . $cfmodif . '\',\'' . $id . '\');" style="margin:0 2px; padding:6px 10px; font-size:14px;" title="Modifier"><i class="fa fa-edit"></i></a>';
+                }
             }
             if ((strpos($btn, 'supprimer') !== false) && ($maj == '1' || $maj == '')) {
-                $html .= $config === 'expedition'
-                    ? '<a href="#" class="dropdown-item text-danger" onclick="supprimer(\'' . $cfsuppr . '\',\'' . $id . '\'); return false;"><i class="fa fa-trash me-2"></i>Supprimer</a>'
-                    : '<a href="#" class="btn btn-danger btn-sm" onclick="supprimer(\'' . $cfsuppr . '\',\'' . $id . '\');" style="margin:0 2px; padding:6px 10px; font-size:14px;" title="Supprimer"><i class="fa fa-trash"></i></a>';
+                if ($config === 'utilisateur') {
+                    $urlSupprimer = htmlspecialchars(route('utilisateur.supprimer', ['id' => $id]), ENT_QUOTES, 'UTF-8');
+                    $html .= '<a href="' . $urlSupprimer . '" class="btn btn-danger btn-sm" onclick="return confirm(\'Voulez-vous vraiment supprimer cet utilisateur ?\');" style="margin:0 2px; padding:6px 10px; font-size:14px;" title="Supprimer"><i class="fa fa-trash"></i></a>';
+                } else {
+                    $html .= $config === 'expedition'
+                        ? '<a href="#" class="dropdown-item text-danger" onclick="supprimer(\'' . $cfsuppr . '\',\'' . $id . '\'); return false;"><i class="fa fa-trash me-2"></i>Supprimer</a>'
+                        : '<a href="#" class="btn btn-danger btn-sm" onclick="supprimer(\'' . $cfsuppr . '\',\'' . $id . '\');" style="margin:0 2px; padding:6px 10px; font-size:14px;" title="Supprimer"><i class="fa fa-trash"></i></a>';
+                }
             }
             if (strpos($btn, 'reinitialiser') !== false) {
-                $html .= '<a href="#" class="btn btn-secondary btn-sm" onclick="reinitialiser(\'' . $id . '\');" style="margin:0 2px; padding:6px 10px; font-size:14px;" title="Réinitialiser le mot de passe"><i class="fa fa-key"></i></a>';
+                if ($config === 'utilisateur') {
+                    $html .= '<button type="button" class="btn btn-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#modalResetPassword" data-user-id="' . htmlspecialchars((string) $id, ENT_QUOTES, 'UTF-8') . '" style="margin:0 2px; padding:6px 10px; font-size:14px;" title="Réinitialiser le mot de passe"><i class="fa fa-key"></i></button>';
+                } else {
+                    $html .= '<a href="#" class="btn btn-secondary btn-sm" onclick="reinitialiser(\'' . $id . '\');" style="margin:0 2px; padding:6px 10px; font-size:14px;" title="Réinitialiser le mot de passe"><i class="fa fa-key"></i></a>';
+                }
             }
 
             if ($config === 'expedition') {

@@ -60,12 +60,12 @@ $donnees = collect(DB::select($rekete));
     public function reinitialiserMotDePasse(Request $request)
     {
         // dd($request->all());
-        try {
-            $request->validate([
-                'iduser' => 'required|exists:users,id',
-                'password' => 'required|min:6|confirmed',
-            ]);
+        $request->validate([
+            'iduser' => 'required|exists:users,id',
+            'password' => 'required|min:6|confirmed',
+        ]);
 
+        try {
             $user = User::findOrFail($request->iduser);
             $user->password = Hash::make($request->password);
             $user->save();
@@ -85,7 +85,11 @@ $donnees = collect(DB::select($rekete));
 
     public function form(Request $request)
     {
-        $idenreg = $request['idenreg'];
+        try {
+            $request->validate([
+                'idenreg' => 'nullable|exists:users,id',
+            ]);
+            $idenreg = $request['idenreg'];
         session(['config' => 'utilisateur']);
 
         $lenregistrement = ($idenreg != null) ? User::find($idenreg) : null;
@@ -98,6 +102,12 @@ $donnees = collect(DB::select($rekete));
             'roles',
             'caisses'
         ));
+
+        } catch (\Exception $e) {
+            dd($e);
+            return redirect()->route('utilisateur')->with('error', 'Une erreur est survenue lors du chargement du formulaire: ' . $e->getMessage());
+        }
+
     }
 
     public function enregistrer(Request $request)

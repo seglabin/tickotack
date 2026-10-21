@@ -226,8 +226,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/utilisateur', [App\Http\Controllers\UserController::class, 'index'])->name('utilisateur');
     Route::get('/ajout-utilisateur', [App\Http\Controllers\UserController::class, 'form']);
     Route::post('/enregistrer-utilisateur', [App\Http\Controllers\UserController::class, 'enregistrer']);
-    Route::get('/modifier-utilisateur/{id}', [App\Http\Controllers\UserController::class, 'formModif']);
-    Route::get('/supprimer-utilisateur/{id}', [App\Http\Controllers\UserController::class, 'supprimer']);
+    Route::get('/modifier-utilisateur/{id}', [App\Http\Controllers\UserController::class, 'formModif'])->name('utilisateur.modifier');
+    Route::get('/supprimer-utilisateur/{id}', [App\Http\Controllers\UserController::class, 'supprimer'])->name('utilisateur.supprimer');
 
     // ===========-------------Roles & Permissions----------===========
     Route::get('/role', [App\Http\Controllers\RoleController::class, 'index'])->name('role');
