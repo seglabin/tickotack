@@ -1,81 +1,247 @@
- @extends('layoutback', [])
+@extends('layoutback')
+
 @section('content')
- 
-@php
-//$menusUser = session('menusUser');
- //dd($menusUser);
-@endphp
+<style>
+    .dashboard-team {
+        --team-ink: #17233c;
+        --team-muted: #7d899f;
+        --team-line: #e9edf4;
+        color: var(--team-ink);
+        padding: 8px 0 38px;
+    }
+    .dashboard-team * { box-sizing: border-box; }
+    .dashboard-team__hero {
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+        padding: 34px 38px;
+        border: 1px solid #e8eef5;
+        border-radius: 22px;
+        background: linear-gradient(115deg, #f5f9ff 0%, #eef8f8 100%);
+    }
+    .dashboard-team__hero:after {
+        content: "";
+        position: absolute;
+        width: 250px;
+        height: 250px;
+        right: 2%;
+        top: -170px;
+        border: 1px solid rgba(37, 116, 137, .12);
+        border-radius: 50%;
+        box-shadow: 0 0 0 32px rgba(37, 116, 137, .035), 0 0 0 66px rgba(37, 116, 137, .025);
+        pointer-events: none;
+    }
+    .dashboard-team__hero-copy, .dashboard-team__role { position: relative; z-index: 1; }
+    .dashboard-team__eyebrow {
+        margin: 0 0 8px;
+        color: #32828a;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: .15em;
+        text-transform: uppercase;
+    }
+    .dashboard-team__hero h1 { margin: 0; color: var(--team-ink); font-size: clamp(25px, 3vw, 35px); font-weight: 700; line-height: 1.2; }
+    .dashboard-team__hero-copy > p:last-child { margin: 9px 0 0; color: #6d7c92; font-size: 14px; }
+    .dashboard-team__role { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border: 1px solid rgba(44, 126, 138, .13); border-radius: 14px; background: rgba(255,255,255,.76); }
+    .dashboard-team__role-icon { display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 12px; color: #227d82; background: #e3f5f2; }
+    .dashboard-team__role-label { display: block; margin-bottom: 3px; color: var(--team-muted); font-size: 10px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; }
+    .dashboard-team__role-name { display: block; color: var(--team-ink); font-size: 14px; font-weight: 700; }
+    .dashboard-team__section-head { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin: 27px 0 15px; }
+    .dashboard-team__section-head h2 { margin: 0; color: var(--team-ink); font-size: 19px; font-weight: 700; }
+    .dashboard-team__section-head p { margin: 5px 0 0; color: var(--team-muted); font-size: 12px; }
+    .dashboard-team__grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 15px; }
+    .dashboard-team__card {
+        display: flex;
+        align-items: flex-start;
+        gap: 15px;
+        min-height: 135px;
+        padding: 20px;
+        border: 1px solid var(--team-line);
+        border-radius: 16px;
+        background: #fff;
+        box-shadow: 0 8px 24px rgba(28, 48, 77, .035);
+        text-decoration: none;
+        transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+    }
+    .dashboard-team__card:hover { transform: translateY(-3px); border-color: #d2e5e8; box-shadow: 0 14px 28px rgba(28, 48, 77, .08); }
+    .dashboard-team__card-icon { display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 13px; font-size: 16px; }
+    .dashboard-team__card-icon--blue { color: #3476d2; background: #edf4ff; }
+    .dashboard-team__card-icon--orange { color: #c38422; background: #fff6e7; }
+    .dashboard-team__card-icon--purple { color: #7659c8; background: #f2efff; }
+    .dashboard-team__card-icon--green { color: #34855c; background: #eaf7ee; }
+    .dashboard-team__card-icon--teal { color: #16877f; background: #e9f8f5; }
+    .dashboard-team__card-body { flex: 1; min-width: 0; }
+    .dashboard-team__card h3 { margin: 1px 0 6px; color: var(--team-ink); font-size: 14px; font-weight: 700; }
+    .dashboard-team__card p { margin: 0; color: var(--team-muted); font-size: 12px; line-height: 1.55; }
+    .dashboard-team__card-arrow { margin-left: auto; padding-top: 4px; color: #9aa6b7; font-size: 12px; transition: transform .2s ease; }
+    .dashboard-team__card:hover .dashboard-team__card-arrow { transform: translateX(3px); color: #287e89; }
+    .dashboard-team__empty {
+        padding: 30px;
+        border: 1px dashed #d7e0ea;
+        border-radius: 16px;
+        color: var(--team-muted);
+        background: #fbfcfe;
+        text-align: center;
+        font-size: 13px;
+    }
+    .dashboard-team__note { display: flex; align-items: center; gap: 11px; margin-top: 20px; padding: 14px 17px; border-radius: 12px; color: #5d7088; background: #f5f8fc; font-size: 12px; }
+    .dashboard-team__note i { color: #4b87a2; }
+    .dashboard-team__operations { margin-top: 27px; }
+    .dashboard-team__operations-heading { margin-bottom: 14px; }
+    .dashboard-team__operations-heading h2 { margin: 0; color: var(--team-ink); font-size: 19px; font-weight: 700; }
+    .dashboard-team__operations-heading p { margin: 5px 0 0; color: var(--team-muted); font-size: 12px; }
+    .dashboard-team__operation-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 15px; }
+    .dashboard-team__operation-panel { min-width: 0; overflow: hidden; border: 1px solid var(--team-line); border-radius: 16px; background: #fff; box-shadow: 0 8px 24px rgba(28, 48, 77, .035); }
+    .dashboard-team__operation-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 20px; border-bottom: 1px solid var(--team-line); }
+    .dashboard-team__operation-head h3 { margin: 0; color: var(--team-ink); font-size: 15px; font-weight: 700; }
+    .dashboard-team__operation-head p { margin: 4px 0 0; color: var(--team-muted); font-size: 11px; }
+    .dashboard-team__operation-link { color: #287e89; font-size: 11px; font-weight: 700; text-decoration: none; white-space: nowrap; }
+    .dashboard-team__operation-table-wrap { overflow-x: auto; }
+    .dashboard-team__operation-table { width: 100%; min-width: 450px; margin: 0; border-collapse: collapse; }
+    .dashboard-team__operation-table th { padding: 11px 16px; color: #8a95a8; background: #fbfcfe; font-size: 10px; font-weight: 700; text-align: left; text-transform: uppercase; }
+    .dashboard-team__operation-table td { padding: 13px 16px; border-top: 1px solid #f0f2f6; color: #46546b; font-size: 12px; }
+    .dashboard-team__operation-ref { color: var(--team-ink); font-weight: 700; }
+    .dashboard-team__operation-status { display: inline-block; padding: 4px 8px; border-radius: 20px; color: #547063; background: #edf7f1; font-size: 10px; font-weight: 600; }
+    .dashboard-team__operation-status--pending { color: #9b6a1e; background: #fff5e4; }
+    .dashboard-team__operation-empty { padding: 25px 18px; color: var(--team-muted); text-align: center; font-size: 12px; }
+    @media (max-width: 991px) { .dashboard-team__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 575px) {
+        .dashboard-team__hero { align-items: flex-start; flex-direction: column; padding: 26px 22px; }
+        .dashboard-team__grid { grid-template-columns: 1fr; gap: 10px; }
+        .dashboard-team__card { min-height: 110px; padding: 17px; }
+        .dashboard-team__section-head { align-items: flex-start; flex-direction: column; }
+        .dashboard-team__operation-grid { grid-template-columns: 1fr; gap: 10px; }
+        .dashboard-team__operation-head { align-items: flex-start; }
+    }
+</style>
 
- <!-- slider-area -->
- <section class="slider__area">
-     <div class="banner-two-col">
-         <div class="container">
-             <div class="row">
-                 <div class="col-lg-6">
-                     <div class="banner-col-1">
-                         <div class="section-title mb-20 tg-heading-subheading animation-style3">
-                             <span class="sub-title">Best accounting Services</span>
-                             <h2 class="title tg-element-title text-60-bold">Accounting platform<span>using</span> AI <span>technology</span> </h2>
-                         </div>
-                         <p class="mb-5">Empower decision-making with real-time financial reporting</p>
-                         <div class="choose__tab-content">
-                             <ul class="list-wrap">
-                                 <li><i class="fas fa-check"></i>Best For IT Consulting</li>
-                                 <li><i class="fas fa-check"></i>Our Vision, Our Mission</li>
-                                 <li><i class="fas fa-check"></i>Save Money &amp; Time</li>
-                                 <li><i class="fas fa-check"></i>100% Satisfaction</li>
-                             </ul>
-                         </div>
-                         <div class="box-authors mt-65">
-                             <div class="box-img-author">
-                                 <img src="assets/templeApexa/img/home7/author.png" />
-                                 <img src="assets/templeApexa/img/home7/author2.png" />
-                                 <img src="assets/templeApexa/img/home7/author3.png" />
-                                 <img src="assets/templeApexa/img/home7/author4.png" />
-                                 <span class="item-author-more">+28k</span>
-                             </div>
-                             <div class="text-trusted-author">
-                                 Trusted , Happy & Satisfied Businesses
-                             </div>
-                         </div>
-                     </div>
-                 </div>
-             </div>
-         </div>
-         <div class="banner-col-2">
-             <div class="swiper-container slider_baner__active slider_baner_home6">
-                 <div class="swiper-wrapper">
-                     <div class="swiper-slide slide__home7">
-                         <img src="assets/templeApexa/img/home7/banner.png" />
-                         <div class="box-info-contact">
-                             <p class="text-need-help">
-                                 <svg width="38" height="38" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                     <g clip-path="url(#clip0_66_3059)">
-                                         <path d="M18.9062 2.21558C22.7573 2.21713 26.4894 3.54999 29.4702 5.98832C32.451 8.42666 34.4972 11.8205 35.262 15.5948C36.0269 19.3692 35.4634 23.2919 33.667 26.6983C31.8707 30.1047 28.9519 32.7854 25.4053 34.286C21.3263 36.0097 16.7297 36.0424 12.6266 34.3769C8.52353 32.7114 5.25011 29.4842 3.52646 25.4053C1.80281 21.3263 1.77013 16.7297 3.43559 12.6266C5.10106 8.52353 8.32825 5.25011 12.4072 3.52646C14.4632 2.6564 16.6737 2.21053 18.9062 2.21558ZM18.9062 0C8.46498 0 0 8.46498 0 18.9062C0 29.3475 8.46498 37.8125 18.9062 37.8125C29.3475 37.8125 37.8125 29.3475 37.8125 18.9062C37.8125 8.46498 29.3475 0 18.9062 0Z" fill="white" />
-                                         <path d="M24.422 29.088C23.3238 29.0142 21.7759 28.6353 20.2648 28.0947C14.9371 26.1878 9.73864 21.1075 8.63381 14.0014C8.43736 12.7363 8.64415 11.5806 9.60275 10.6397C9.92401 10.3251 10.2098 9.975 10.5237 9.653C11.7053 8.43665 13.432 8.40563 14.6557 9.57398C15.0435 9.94324 15.4378 10.3073 15.816 10.6884C16.3337 11.199 16.6335 11.8904 16.6524 12.6174C16.6713 13.3443 16.4077 14.0503 15.9171 14.5871C15.6217 14.915 15.3116 15.2266 14.9999 15.5376C14.6594 15.8773 14.2363 16.0723 13.7821 16.2141C13.2215 16.3898 13.1174 16.6247 13.3722 17.1601C14.9822 20.5322 17.5023 22.9602 20.9325 24.4442C21.3911 24.6421 21.6031 24.5527 21.7877 24.0978C22.1924 23.1001 22.9346 22.3726 23.7876 21.7848C24.7529 21.1201 26.1354 21.2678 27.0497 22.0536C27.5509 22.4843 28.0299 22.9403 28.4846 23.4198C28.974 23.9434 29.2458 24.6334 29.2452 25.35C29.2445 26.0666 28.9713 26.7561 28.4809 27.2786C28.3384 27.4337 28.1914 27.5851 28.0548 27.7447C27.2321 28.701 26.1886 29.1486 24.422 29.088Z" fill="white" />
-                                     </g>
-                                     <defs>
-                                         <clipPath id="clip0_66_3059">
-                                             <rect width="37.8125" height="37.8125" fill="white" />
-                                         </clipPath>
-                                     </defs>
-                                 </svg>
-                                 <!-- Need help? Call us -->
-                             </p>
-                             <!-- <p class="text-42-bold text-phone">1-800-222-8888</p> -->
-                         </div>
-                     </div>
-                 </div>
-             </div>
-             <div class="box-button-slider-bottom">
-                 <div class="testimonial__nav-four">
-                     <div class="testimonial-two-button-prev button-swiper-prev"><i class="flaticon-right-arrow"></i></div>
-                     <div class="testimonial-two-button-next button-swiper-next"><i class="flaticon-right-arrow"></i></div>
-                 </div>
-             </div>
-         </div>
-     </div>
- </section>
- <!-- slider-area-end -->
+<section class="dashboard-team" aria-labelledby="dashboard-team-title">
+    <div class="dashboard-team__hero">
+        <div class="dashboard-team__hero-copy">
+            <p class="dashboard-team__eyebrow">Espace de travail · {{ now()->format('d/m/Y') }}</p>
+            <h1 id="dashboard-team-title">Bonjour, {{ Auth::user()->name }}</h1>
+            <p>Retrouvez rapidement les outils nécessaires à votre activité.</p>
+        </div>
+        <div class="dashboard-team__role">
+            <span class="dashboard-team__role-icon"><i class="fas fa-id-badge"></i></span>
+            <span><span class="dashboard-team__role-label">Votre profil</span><span class="dashboard-team__role-name">{{ $roleLabel }}</span></span>
+        </div>
+    </div>
 
- @endsection
+    <section class="dashboard-team__operations" aria-labelledby="dashboard-team-operations-title">
+        <div class="dashboard-team__operations-heading">
+            <h2 id="dashboard-team-operations-title">Activité de votre caisse</h2>
+            <p>
+                @if($userCashbox && $userCashbox->idadresse)
+                    Expéditions et transferts à destination de {{ $userCashbox->adresse ?: 'l’adresse associée à votre caisse' }} ({{ $userCashbox->caisse }}).
+                @else
+                    Aucun point de caisse avec adresse de destination n’est associé à votre compte.
+                @endif
+            </p>
+        </div>
+
+        <div class="dashboard-team__operation-grid">
+            <section class="dashboard-team__operation-panel" aria-labelledby="dashboard-team-expeditions-title">
+                <div class="dashboard-team__operation-head">
+                    <div>
+                        <h3 id="dashboard-team-expeditions-title">Expéditions à recevoir</h3>
+                        <p>Destinées à l’adresse de votre caisse.</p>
+                    </div>
+                    @if($userCashbox && $userCashbox->idadresse)
+                        <a class="dashboard-team__operation-link" href="{{ url('expedition') }}">Tout voir <i class="fas fa-arrow-right"></i></a>
+                    @endif
+                </div>
+                @if($recentExpeditions->isNotEmpty())
+                    <div class="dashboard-team__operation-table-wrap">
+                        <table class="dashboard-team__operation-table">
+                            <thead><tr><th>Référence</th><th>Date</th><th>Expéditeur</th><th>État</th></tr></thead>
+                            <tbody>
+                                @foreach($recentExpeditions as $expedition)
+                                    <tr>
+                                        <td class="dashboard-team__operation-ref">{{ $expedition->code }}</td>
+                                        <td>{{ \Carbon\Carbon::parse($expedition->datenreg)->format('d/m/Y H:i') }}</td>
+                                        <td>{{ $expedition->expediteur ?: '—' }}</td>
+                                        <td><span class="dashboard-team__operation-status">{{ $expedition->etat ?: 'Enregistrée' }}</span></td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @else
+                    <div class="dashboard-team__operation-empty">
+                        {{ $userCashbox && $userCashbox->idadresse ? 'Aucune expédition récente pour cette destination.' : 'Adresse de caisse non configurée.' }}
+                    </div>
+                @endif
+            </section>
+
+            <section class="dashboard-team__operation-panel" aria-labelledby="dashboard-team-transfers-title">
+                <div class="dashboard-team__operation-head">
+                    <div>
+                        <h3 id="dashboard-team-transfers-title">Transferts à recevoir</h3>
+                        <p>Destinés à l’adresse de votre caisse.</p>
+                    </div>
+                    @if($userCashbox && $userCashbox->idadresse)
+                        <a class="dashboard-team__operation-link" href="{{ url('transfert') }}">Tout voir <i class="fas fa-arrow-right"></i></a>
+                    @endif
+                </div>
+                @if($recentTransfers->isNotEmpty())
+                    <div class="dashboard-team__operation-table-wrap">
+                        <table class="dashboard-team__operation-table">
+                            <thead><tr><th>Référence</th><th>Date</th><th>Expéditeur</th><th>Statut</th></tr></thead>
+                            <tbody>
+                                @foreach($recentTransfers as $transfer)
+                                    <tr>
+                                        <td class="dashboard-team__operation-ref">{{ $transfer->code }}</td>
+                                        <td>{{ \Carbon\Carbon::parse($transfer->datetransfert)->format('d/m/Y H:i') }}</td>
+                                        <td>{{ $transfer->expediteur ?: '—' }}</td>
+                                        <td><span class="dashboard-team__operation-status {{ $transfer->datepayement ? '' : 'dashboard-team__operation-status--pending' }}">{{ $transfer->datepayement ? 'Payé' : 'À payer' }}</span></td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @else
+                    <div class="dashboard-team__operation-empty">
+                        {{ $userCashbox && $userCashbox->idadresse ? 'Aucun transfert récent pour cette destination.' : 'Adresse de caisse non configurée.' }}
+                    </div>
+                @endif
+            </section>
+        </div>
+    </section>
+
+    <div class="dashboard-team__section-head">
+        <div>
+            <h2>Vos raccourcis</h2>
+            <p>Accédez directement aux fonctionnalités autorisées pour votre profil.</p>
+        </div>
+    </div>
+
+    @if(count($dashboardActions))
+        <div class="dashboard-team__grid">
+            @foreach($dashboardActions as $action)
+                <a class="dashboard-team__card" href="{{ $action['url'] }}">
+                    <span class="dashboard-team__card-icon dashboard-team__card-icon--{{ $action['color'] }}"><i class="fas {{ $action['icon'] }}"></i></span>
+                    <span class="dashboard-team__card-body">
+                        <h3>{{ $action['title'] }}</h3>
+                        <p>{{ $action['description'] }}</p>
+                    </span>
+                    <i class="fas fa-arrow-right dashboard-team__card-arrow" aria-hidden="true"></i>
+                </a>
+            @endforeach
+        </div>
+    @else
+        <div class="dashboard-team__empty">
+            <i class="fas fa-lock"></i>
+            <p class="mb-0 mt-2">Aucun raccourci n’est associé à votre profil. Contactez un administrateur pour demander un accès.</p>
+        </div>
+    @endif
+
+    <div class="dashboard-team__note">
+        <i class="fas fa-info-circle"></i>
+        <span>Les raccourcis affichés correspondent aux droits d’accès de votre profil.</span>
+    </div>
+</section>
+@endsection

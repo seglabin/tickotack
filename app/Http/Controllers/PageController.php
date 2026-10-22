@@ -83,6 +83,168 @@ class PageController extends Controller
 
     public function home()
     {
+        $user = Auth::check() ? Auth::user() : null;
+        $config = session('config') ?? 'site';
+
+        if ($user != null && $config != 'site') {
+            $user->loadMissing('role');
+            $roleName = $user->role
+                ? Str::lower(Str::ascii($user->role->code . ' ' . $user->role->name))
+                : '';
+            $isAdministrator = Str::contains($roleName, 'admin');
+
+            if ($isAdministrator) {
+                $today = now()->toDateString();
+                $dashboardStats = [
+                    'users' => DB::table('users')->where('actif', true)->count(),
+                    'expeditions' => DB::table('expeditions')->whereDate('datenreg', $today)->count(),
+                    'transfers' => DB::table('transferts')->whereDate('datetransfert', $today)->count(),
+                    'cashboxes' => DB::table('caisses')->count(),
+                    'pendingShipments' => DB::table('expeditions as e')
+                        ->leftJoinSub(
+                            DB::table('paymentcolis')
+                                ->select('idcolis')
+                                ->selectRaw('SUM(montant) as total')
+                                ->groupBy('idcolis'),
+                            'payments',
+                            'payments.idcolis',
+                            '=',
+                            'e.id'
+                        )
+                        ->whereRaw('e.montant > COALESCE(payments.total, 0) + COALESCE(e.montantpaye, 0)')
+                        ->count(),
+                    'pendingTransfers' => DB::table('transferts')->whereNull('datepayement')->count(),
+                ];
+                $recentExpeditions = DB::table('expeditions as e')
+                    ->leftJoin('adresses as destination', 'destination.id', '=', 'e.iddestination')
+                    ->leftJoin('elements as etat', 'etat.id', '=', 'e.idetat')
+                    ->select('e.code', 'e.datenreg', 'e.nbrcolis', 'destination.libelle as destination', 'etat.libelle as etat')
+                    ->orderByDesc('e.datenreg')
+                    ->limit(5)
+                    ->get();
+                $recentTransfers = DB::table('transferts as t')
+                    ->leftJoin('acteurs as sender', 'sender.id', '=', 't.idexpediteur')
+                    ->leftJoin('acteurs as receiver', 'receiver.id', '=', 't.idrecepteur')
+                    ->leftJoin('adresses as destination', 'destination.id', '=', 't.iddestination')
+                    ->leftJoin('elements as etat', 'etat.id', '=', 't.idetat')
+                    ->select(
+                        't.code',
+                        't.datetransfert',
+                        't.montretrait',
+                        't.montpaye',
+                        't.datepayement',
+                        'sender.nom as expediteur',
+                        'receiver.nom as recepteur',
+                        'destination.libelle as destination',
+                        'etat.libelle as etat'
+                    )
+                    ->orderByDesc('t.datetransfert')
+                    ->limit(5)
+                    ->get();
+
+                $paymentsByExpedition = DB::table('paymentcolis')
+                    ->select('idcolis')
+                    ->selectRaw('SUM(montant) as total')
+                    ->groupBy('idcolis');
+                $expeditionPaymentsByCashbox = DB::table('expeditions as e')
+                    ->leftJoinSub($paymentsByExpedition, 'payments', 'payments.idcolis', '=', 'e.id')
+                    ->whereNotNull('e.idcaisse')
+                    ->groupBy('e.idcaisse')
+                    ->select('e.idcaisse')
+                    ->selectRaw('SUM(COALESCE(payments.total, 0) + COALESCE(e.montantpaye, 0)) as total');
+                $transferPaymentsByCashbox = DB::table('operationfinancieres')
+                    ->where('libsrce', 'transferts')
+                    ->where('sens', 'Sortie')
+                    ->groupBy('idcaisse')
+                    ->select('idcaisse')
+                    ->selectRaw('SUM(montant) as total');
+                $cashboxPaymentComparison = DB::table('caisses as c')
+                    ->leftJoinSub($expeditionPaymentsByCashbox, 'expedition_payments', 'expedition_payments.idcaisse', '=', 'c.id')
+                    ->leftJoinSub($transferPaymentsByCashbox, 'transfer_payments', 'transfer_payments.idcaisse', '=', 'c.id')
+                    ->select(
+                        'c.id',
+                        'c.libelle',
+                        'c.devise',
+                        DB::raw('COALESCE(expedition_payments.total, 0) as expeditions_payees'),
+                        DB::raw('COALESCE(transfer_payments.total, 0) as transferts_payes')
+                    )
+                    ->orderBy('c.libelle')
+                    ->get();
+                $recentCashAdvances = DB::table('approcaisses as a')
+                    ->leftJoin('caisses as c', 'c.id', '=', 'a.idcaisse')
+                    ->leftJoin('elements as source', 'source.id', '=', 'a.idsource')
+                    ->select('a.dateappro', 'a.montant', 'a.observation', 'c.libelle as caisse', 'source.libelle as source')
+                    ->orderByDesc('a.dateappro')
+                    ->limit(5)
+                    ->get();
+
+                return view('back.accueilA', compact(
+                    'dashboardStats',
+                    'recentExpeditions',
+                    'recentTransfers',
+                    'cashboxPaymentComparison',
+                    'recentCashAdvances'
+                ));
+            }
+
+            $userCashbox = $user->idcaisse
+                ? DB::table('caisses as c')
+                    ->leftJoin('adresses as a', 'a.id', '=', 'c.idadresse')
+                    ->where('c.id', $user->idcaisse)
+                    ->first(['c.libelle as caisse', 'c.idadresse', 'a.libelle as adresse'])
+                : null;
+            $cashboxAddressId = $userCashbox->idadresse ?? null;
+            $recentExpeditions = $cashboxAddressId
+                ? DB::table('expeditions as e')
+                    ->leftJoin('acteurs as sender', 'sender.id', '=', 'e.idexpediteur')
+                    ->leftJoin('adresses as destination', 'destination.id', '=', 'e.iddestination')
+                    ->leftJoin('elements as etat', 'etat.id', '=', 'e.idetat')
+                    ->where('e.iddestination', $cashboxAddressId)
+                    ->select('e.code', 'e.datenreg', 'sender.nom as expediteur', 'destination.libelle as destination', 'etat.libelle as etat')
+                    ->orderByDesc('e.datenreg')
+                    ->limit(5)
+                    ->get()
+                : collect();
+            $recentTransfers = $cashboxAddressId
+                ? DB::table('transferts as t')
+                    ->leftJoin('acteurs as sender', 'sender.id', '=', 't.idexpediteur')
+                    ->leftJoin('acteurs as receiver', 'receiver.id', '=', 't.idrecepteur')
+                    ->leftJoin('adresses as destination', 'destination.id', '=', 't.iddestination')
+                    ->where('t.iddestination', $cashboxAddressId)
+                    ->select('t.code', 't.datetransfert', 't.datepayement', 'sender.nom as expediteur', 'receiver.nom as recepteur', 'destination.libelle as destination')
+                    ->orderByDesc('t.datetransfert')
+                    ->limit(5)
+                    ->get()
+                : collect();
+
+            $availablePermissions = session('menusUser', []);
+            $dashboardActions = [
+                ['permission' => 3, 'title' => 'Dépenses', 'description' => 'Consulter et enregistrer les dépenses.', 'url' => url('depense'), 'icon' => 'fa-receipt', 'color' => 'orange'],
+                ['permission' => 4, 'title' => 'Expéditions', 'description' => 'Gérer les colis et leurs retraits.', 'url' => url('expedition'), 'icon' => 'fa-box', 'color' => 'purple'],
+                ['permission' => 5, 'title' => 'Conteneurs', 'description' => 'Suivre les expéditions regroupées.', 'url' => url('conteneur'), 'icon' => 'fa-shipping-fast', 'color' => 'green'],
+                ['permission' => 6, 'title' => 'Transferts', 'description' => 'Enregistrer les dépôts et retraits.', 'url' => url('transfert'), 'icon' => 'fa-exchange-alt', 'color' => 'teal'],
+                ['permission' => 19, 'title' => 'Adresses', 'description' => 'Gérer les villes et destinations.', 'url' => url('adresse'), 'icon' => 'fa-map-marker-alt', 'color' => 'orange'],
+                ['permission' => 20, 'title' => 'Acteurs', 'description' => 'Gérer les expéditeurs et destinataires.', 'url' => url('acteur'), 'icon' => 'fa-users', 'color' => 'blue'],
+                ['permission' => 30, 'title' => 'Utilisateurs', 'description' => 'Consulter les comptes utilisateurs.', 'url' => url('utilisateur'), 'icon' => 'fa-user-cog', 'color' => 'purple'],
+                ['permission' => 31, 'title' => 'Profils et rôles', 'description' => 'Gérer les profils de la plateforme.', 'url' => url('role'), 'icon' => 'fa-user-shield', 'color' => 'teal'],
+                ['permission' => 33, 'title' => 'Droits d’accès', 'description' => 'Configurer les autorisations des profils.', 'url' => url('rolepermission'), 'icon' => 'fa-lock', 'color' => 'green'],
+            ];
+            $dashboardActions = array_values(array_filter(
+                $dashboardActions,
+                fn (array $action) => is_array($availablePermissions)
+                    && in_array($action['permission'], $availablePermissions)
+            ));
+            $roleLabel = $user->role->name ?? 'Collaborateur';
+
+            return view('back.accueilB', compact(
+                'dashboardActions',
+                'roleLabel',
+                'userCashbox',
+                'recentExpeditions',
+                'recentTransfers'
+            ));
+        }
+
         $sliders = DB::table('articles')
             ->where('carousel', true)
             ->orderBy('libelle')
@@ -114,14 +276,6 @@ class PageController extends Controller
             ->orderBy('libelle')
             ->limit(12)
             ->get();
-        $user = Auth::check() ? Auth::user() : null;
-
-        $config = session('config') ?? 'site';
-
-        if ($user != null && $config != 'site') {
-            return view('back.accueilA');
-        }
-
         return view('pages.home', compact(
             'sliders',
             'categtop',
