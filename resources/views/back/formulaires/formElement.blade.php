@@ -10,8 +10,8 @@
                     value="{{($a != null) ? $a->libelle : null}}">
             </div>
         </div>
-
     </div>
+    @if(in_array(session('nomtable'), ['etat']))
     <div class="col-md-4">
         <div class="card-body">
             <div class="form-group">
@@ -30,7 +30,10 @@
                     value="{{($a != null) ? $a->valeur : null}}">
             </div>
         </div>
-
     </div>
+    @else
+    <input type="hidden" id="lecas" name="lecas" value="">
+    <input type="hidden" id="valeur" name="valeur" value="">
+    @endif
 
 </div>

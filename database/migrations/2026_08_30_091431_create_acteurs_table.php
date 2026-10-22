@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('tel',20);
             $table->string('whatsap',20);
             $table->text('marque');
-            $table->string('carte');
+            $table->string('carte')->nullable();
             $table->unsignedBigInteger('idadreslivr')->nullable();
             $table->foreign('idadreslivr')
                 ->references('id')

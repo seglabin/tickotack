@@ -28,8 +28,8 @@ class TarifexpeditionController extends Controller
             "));
 
             $nouv = '/ajout-tarifexpedition';
-            $entete = 'Type de colis|Type d\'envoi|Moyen de transport|Départ|Destination|Poids|Prix';
-            $cols = 'typecolis|typenvoi|moyen|depart|destination|poids|prix';
+            $entete = 'Type de colis|Type d\'envoi|Moyen de transport|Départ|Destination|Prix';
+            $cols = 'typecolis|typenvoi|moyen|depart|destination|prix';
             $btn = 'modifier|supprimer';
 
             session(['config' => 'tarifexpedition']);

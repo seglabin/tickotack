@@ -29,8 +29,12 @@ class ElementController extends Controller
             $rekete = "SELECT * FROM elements WHERE nomtable = '" . $nomtable . "'  ORDER BY libelle";
             $donnees = collect(DB::select($rekete));
             $nouv = '/ajout-element';
-            $entete = 'Cas|Libellé|Valeur';
-            $cols = 'lecas|libelle|valeur';
+            $entete = 'Libellé';
+            $cols = 'libelle';
+            if(in_array($nomtable, [ 'etat'])) {
+                $entete = 'Cas|Libellé|Valeur';
+                $cols = 'lecas|libelle|valeur';
+            }
             $btn = 'modifier|supprimer';
             // if ($nomtable == 'typeoperation') $btn .= '|associer';
 
