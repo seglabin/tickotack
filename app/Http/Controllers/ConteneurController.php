@@ -32,7 +32,7 @@ class ConteneurController extends Controller
                 LEFT JOIN elements he ON he.id = hc.idetat
                 ORDER BY c.id DESC
             ";
-            dd($rekete);
+            // dd($rekete);
             $donnees = collect(DB::select($rekete));
 
             $nouv = '/ajout-conteneur';
