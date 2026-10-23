@@ -14,7 +14,7 @@ class ConteneurController extends Controller
         try {
             $titre = 'Liste des expéditions de cargo/conteneur';
             $donnees = collect(DB::select("\n                SELECT c.id,  c.numconteneur, c.typeconteneur, c.coutcfa,
-                       c.lienconteneur, e.libelle AS consignataire,
+                       c.lienconteneur, e.libelle AS consignataire, c.idetat,
                        tn.libelle AS typenvoi, mt.libelle AS moyentransport,
                        c.datedepart, c.douane, c.poidstotal, et.libelle AS etat,
                        CASE WHEN hc.idetat IS NULL THEN '1' ELSE '0' END AS maj,
