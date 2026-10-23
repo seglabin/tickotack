@@ -13,7 +13,7 @@ class ConteneurController extends Controller
     {
         try {
             $titre = 'Liste des expéditions de cargo/conteneur';
-            $donnees = collect(DB::select("\n                SELECT c.id, c.libelle, c.numconteneur, c.typeconteneur, c.coutcfa,
+            $donnees = collect(DB::select("\n                SELECT c.id,  c.numconteneur, c.typeconteneur, c.coutcfa,
                        c.lienconteneur, e.libelle AS consignataire,
                        tn.libelle AS typenvoi, mt.libelle AS moyentransport,
                        c.datedepart, c.douane, c.poidstotal, et.libelle AS etat,
