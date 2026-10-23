@@ -13,7 +13,7 @@ concurrency:
 
 env:
   # Même version que celle du site dans le panel LWS (vendor/ est construit avec)
-  PHP_VERSION: '8.2'
+  PHP_VERSION: '8.3.36'
 
 
 jobs:
