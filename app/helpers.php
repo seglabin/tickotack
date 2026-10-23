@@ -553,18 +553,23 @@ function lesdatesdumois($mois, $annee)
 
 function enregistreOperationFinanciere($sens, $montant, $idsrce, $libsrce, $idcaisse, $id = null)
 {
-    //`sens`, `montant`, `idsrce`, `libsrce`, `idcaisse`
-    $operation = $id == null ? new App\Models\OperationFinanciere() :  App\Models\OperationFinanciere::find($id);
-    $operation->sens = $sens;
-    $operation->montant = $montant;
-    $operation->idsrce = $idsrce;
-    $operation->libsrce = $libsrce;
-    $operation->idcaisse = $idcaisse;
-    if ($operation->save()) {
-        $caisse = App\Models\caisse::find($idcaisse);
-        $solde = soldeCaisse($idcaisse);
-        $caisse->montant = $solde;
-        $caisse->save();
+    try {
+        //code...
+        //`sens`, `montant`, `idsrce`, `libsrce`, `idcaisse`
+        $operation = $id == null ? new App\Models\OperationFinanciere() :  App\Models\OperationFinanciere::find($id);
+        $operation->sens = $sens;
+        $operation->montant = $montant;
+        $operation->idsrce = $idsrce;
+        $operation->libsrce = $libsrce;
+        $operation->idcaisse = $idcaisse;
+        if ($operation->save()) {
+            $caisse = App\Models\caisse::find($idcaisse);
+            $solde = soldeCaisse($idcaisse);
+            $caisse->montant = $solde;
+            $caisse->save();
+        }
+    } catch (\Exception $e) {
+        dd($e->getMessage());
     }
 }
 
