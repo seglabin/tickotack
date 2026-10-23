@@ -13,7 +13,7 @@ class ConteneurController extends Controller
     {
         try {
             $titre = 'Liste des expéditions de cargo/conteneur';
-            $donnees = collect(DB::select("\n                SELECT c.id,  c.numconteneur, c.typeconteneur, c.coutcfa,
+            $rekete = "\n                SELECT c.id,  c.numconteneur, c.typeconteneur, c.coutcfa,
                        c.lienconteneur, e.libelle AS consignataire, c.idetat,
                        tn.libelle AS typenvoi, mt.libelle AS moyentransport,
                        c.datedepart, c.douane, c.poidstotal, et.libelle AS etat,
@@ -31,7 +31,10 @@ class ConteneurController extends Controller
                 )
                 LEFT JOIN elements he ON he.id = hc.idetat
                 ORDER BY c.id DESC
-            "));
+            ";
+            dd($rekete);
+            $donnees = collect(DB::select($rekete));
+
             $nouv = '/ajout-conteneur';
             $entete = 'Référence|Moyen de transport|Type d\'envoi|Type|Coût (CFA)|Consignataire|État';
             $cols = 'numconteneur|moyentransport|typenvoi|typeconteneur|coutcfa|consignataire|etat';
