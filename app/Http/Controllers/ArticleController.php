@@ -135,6 +135,7 @@ class ArticleController extends Controller
                 $e->description = $request->description;
                 $e->lot = ($request->lot!= null)?$request->lot:0;
                 $e->carousel = ($request->carousel!= null)?$request->carousel:0;
+                $e->actualite = ($request->actualite != null) ? $request->actualite : 0;
                 $e->idparent = $request->idparent;
                 $e->prix = sansespace($request->prix);
                 $e->idcategorie = $request->idcategorie;

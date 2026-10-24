@@ -74,6 +74,8 @@
                             for="lot">Lot </label></div>
                     <div class="col-md-4"><input type="checkbox" onchange="valCoche('carousel');" {{(($a != null) && ($a->carousel == 1)) ? 'checked' : ''}} id="carousel" name="carousel"
                             value="{{($a != null) ? $a->carousel : 0}}"> <label for="carousel"> Carousel</label></div>
+                    <div class="col-md-4"><input type="checkbox" onchange="valCoche('actualite');" {{(($a != null) && ($a->actualite == 1)) ? 'checked' : ''}} id="actualite" name="actualite"
+                            value="{{($a != null) ? $a->actualite : 0}}"> <label for="actualite"> Actualité</label></div>
                 </div>
             </div>
         </div>

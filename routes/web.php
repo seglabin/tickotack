@@ -147,6 +147,13 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/enregistrer-approcaisse', 'App\Http\Controllers\ApprocaisseController@enregistrer');
     Route::get('/supprimer-approcaisse/{id}', 'App\Http\Controllers\ApprocaisseController@supprimer');
 
+    //-------------------mvtcaisse----------------
+    Route::get('/mvtcaisse', 'App\Http\Controllers\MvtcaisseController@index')->name('mvtcaisse');
+    Route::get('/ajout-mvtcaisse', 'App\Http\Controllers\MvtcaisseController@form');
+    Route::get('/modifier-mvtcaisse/{id}', 'App\Http\Controllers\MvtcaisseController@formModif');
+    Route::post('/enregistrer-mvtcaisse', 'App\Http\Controllers\MvtcaisseController@enregistrer');
+    Route::get('/supprimer-mvtcaisse/{id}', 'App\Http\Controllers\MvtcaisseController@supprimer');
+
     //-------------------depense----------------
     Route::get('/depense', 'App\Http\Controllers\DepenseController@index')->name('depense');
     Route::get('/ajout-depense', 'App\Http\Controllers\DepenseController@form');

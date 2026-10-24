@@ -14,6 +14,10 @@ if(empty($conteneurs)) {
 
 @endphp
 
+@if(session('error'))
+<div class="alert alert-danger" role="alert">{{ session('error') }}</div>
+@endif
+
 <div class="card-body">
   @switch($config)
   @case('transfert')

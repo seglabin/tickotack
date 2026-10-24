@@ -23,6 +23,16 @@ $a = ($lenregistrement) ? $lenregistrement : null;
 @section('content')
         <div class="contact__form-wrap">
             <p>Les champs obligatoires sont marqués (*)</p>
+            @if($errors->any())
+                <div class="alert alert-danger" role="alert">
+                    @foreach($errors->all() as $error)
+                        <div>{{ $error }}</div>
+                    @endforeach
+                </div>
+            @endif
+            @if(session('error'))
+                <div class="alert alert-danger" role="alert">{{ session('error') }}</div>
+            @endif
                             
         @switch($config)
             
@@ -48,6 +58,10 @@ $a = ($lenregistrement) ? $lenregistrement : null;
                         
                 @case('approcaisse')
                 @include('back.formulaires.formApprocaisse')
+                @break
+
+                @case('mvtcaisse')
+                @include('back.formulaires.formMvtcaisse')
                 @break
 
                 @case('depense')
