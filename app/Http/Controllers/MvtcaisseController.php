@@ -42,6 +42,7 @@ class MvtcaisseController extends Controller
 
             return view('back.liste', compact('donnees', 'titre', 'nouv', 'entete', 'cols', 'btn'));
         } catch (\Exception $e) {
+            dd($e);
             return redirect()->route('mvtcaisse')->with('error', 'Erreur de chargement : ' . $e->getMessage());
         }
     }
