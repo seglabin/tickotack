@@ -556,7 +556,7 @@ function enregistreOperationFinanciere($sens, $montant, $idsrce, $libsrce, $idca
     try {
         //code...
         //`sens`, `montant`, `idsrce`, `libsrce`, `idcaisse`
-        $operation = $id == null ? new App\Models\OperationFinanciere() :  App\Models\OperationFinanciere::find($id);
+        $operation = $id == null ? new App\Models\operationfinanciere() :  App\Models\operationfinanciere::find($id);
         $operation->sens = $sens;
         $operation->montant = $montant;
         $operation->idsrce = $idsrce;
