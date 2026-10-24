@@ -4,9 +4,9 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use App\Models\Role;
+use App\Models\role;
 use App\Models\User;
-use App\Models\Rolepermission;
+use App\Models\rolepermission;
 use App\Models\Permission;
 use Illuminate\Support\Facades\Auth;
 
