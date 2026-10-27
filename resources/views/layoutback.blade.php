@@ -17,7 +17,7 @@
 		<!-- CSS here -->
 		    @include('back.includes.css')
 	</head>
-	<body>
+	<body class="back-office">
         <!--Preloader-->
          @include('back.includes.preloader')
      	<!--Preloader-end -->
@@ -55,7 +55,7 @@
 			@endphp
 
 			
-			<form action = "" name="myform" id="myform" method="get" enctype="multipart/form-data" style="margin-top: 35px;">
+			<form action = "" name="myform" id="myform" method="get" enctype="multipart/form-data">
                 @csrf
                 <input type="hidden" id="idenreg" name="idenreg" value="{{ $idenreg}}">
                 <input type="hidden" id="config" name="config" value="{{ $config}}">
@@ -83,6 +83,21 @@
 										</div>
 
 									</div>
+
+									@if ($nouv != null || $retour != null)
+									<div class="back-mobile-actions d-md-none" role="group" aria-label="Actions de la page">
+										@if ($retour != null)
+										<a class="btn btn-outline-secondary" href="{{ url(ltrim((string) $retour, '/')) }}">
+											<i class="fa fa-arrow-left" aria-hidden="true"></i> Retour
+										</a>
+										@endif
+										@if ($nouv != null)
+										<a class="btn btn-primary" href="{{ url(ltrim((string) $nouv, '/')) }}">
+											<i class="fa fa-plus-circle" aria-hidden="true"></i> Nouveau
+										</a>
+										@endif
+									</div>
+									@endif
 									
 								</div>
 
@@ -121,14 +136,13 @@
                     }
                 }
 
-                if (document.readyState === 'complete') {
-                    hidePreloader();
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', hidePreloader, { once: true });
                 } else {
-                    window.addEventListener('load', hidePreloader, { once: true });
+                    hidePreloader();
                 }
 
                 window.addEventListener('pageshow', hidePreloader);
-                window.setTimeout(hidePreloader, 2500);
             })();
         </script>
 	</body>

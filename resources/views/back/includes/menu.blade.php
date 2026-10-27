@@ -129,7 +129,7 @@
 
                         				</ul>
                         			</div>
-                        			<div class="mobile-nav-toggler">
+                        <button type="button" class="mobile-nav-toggler" aria-label="Ouvrir le menu" aria-controls="mobile-menu" aria-expanded="false">
                         				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 18" fill="none">
                         					<path d="M0 2C0 0.895431 0.895431 0 2 0C3.10457 0 4 0.895431 4 2C4 3.10457 3.10457 4 2 4C0.895431 4 0 3.10457 0 2Z" fill="currentcolor" />
                         					<path d="M0 9C0 7.89543 0.895431 7 2 7C3.10457 7 4 7.89543 4 9C4 10.1046 3.10457 11 2 11C0.895431 11 0 10.1046 0 9Z" fill="currentcolor" />
@@ -141,51 +141,23 @@
                         					<path d="M14 9C14 7.89543 14.8954 7 16 7C17.1046 7 18 7.89543 18 9C18 10.1046 17.1046 11 16 11C14.8954 11 14 10.1046 14 9Z" fill="currentcolor" />
                         					<path d="M14 16C14 14.8954 14.8954 14 16 14C17.1046 14 18 14.8954 18 16C18 17.1046 17.1046 18 16 18C14.8954 18 14 17.1046 14 16Z" fill="currentcolor" />
                         				</svg>
-                        			</div>
+                        </button>
                         		</nav>
                         	</div>
                         	<!-- Mobile Menu  -->
                         	<div class="tgmobile__menu">
-                        		<nav class="tgmobile__menu-box">
-                        			<div class="close-btn"><i class="fas fa-times"></i></div>
+                                <nav class="tgmobile__menu-box" id="mobile-menu" aria-label="Navigation principale">
+                                    <button type="button" class="close-btn" aria-label="Fermer le menu"><i class="fas fa-times"></i></button>
                         			<div class="nav-logo">
                         				<a href="{{ route('home') }}"><img src="{{ asset('assets/templeApexa/img/logo/logo.png') }}" alt="Logo" /></a>
                         			</div>
-                        			<div class="tgmobile__search">
-                        				<form action="#">
-                        					<input type="text" placeholder="Search here..." />
-                        					<button><i class="fas fa-search"></i></button>
-                        				</form>
-                        			</div>
+									<ul class="navigation back-mobile-site-link">
+										<li>
+											<a href="{{ url('site') }}"><i class="fa fa-globe" aria-hidden="true"></i> Site</a>
+										</li>
+									</ul>
                         			<div class="tgmobile__menu-outer">
                         				<!--Here Menu Will Come Automatically Via Javascript / Same Menu as in Header-->
-                        			</div>
-                        			<div class="tgmobile__menu-bottom">
-                        				<div class="contact-info">
-                        					<ul class="list-wrap">
-                        						<li><a href="mailto:info@apexa.com">info@apexa.com</a></li>
-                        						<li><a href="tel:0123456789">+123 888 9999</a></li>
-                        					</ul>
-                        				</div>
-                        				<div class="social-links">
-                        					<ul class="list-wrap">
-                        						<li>
-                        							<a href="javascript:void(0)"><i class="fab fa-facebook-f"></i></a>
-                        						</li>
-                        						<li>
-                        							<a href="javascript:void(0)"><i class="fab fa-twitter"></i></a>
-                        						</li>
-                        						<li>
-                        							<a href="javascript:void(0)"><i class="fab fa-instagram"></i></a>
-                        						</li>
-                        						<li>
-                        							<a href="javascript:void(0)"><i class="fab fa-linkedin-in"></i></a>
-                        						</li>
-                        						<li>
-                        							<a href="javascript:void(0)"><i class="fab fa-youtube"></i></a>
-                        						</li>
-                        					</ul>
-                        				</div>
                         			</div>
                         		</nav>
                         	</div>
@@ -202,40 +174,46 @@
                         		background: #fee2e2 !important;
                         	}
 
-                        	#userMenuToggle:hover {
+                        .user-menu-toggle:hover {
                         		background: rgba(255, 255, 255, 0.2) !important;
                         	}
                         </style>
 
                         <script>
-                        	document.addEventListener('DOMContentLoaded', function() {
-                        		var toggle = document.getElementById('userMenuToggle');
-                        		var dropdown = document.getElementById('userDropdownMenu');
+                            document.addEventListener('DOMContentLoaded', function() {
+                                var toggles = document.querySelectorAll('.user-menu-toggle');
 
-                        		if (toggle && dropdown) {
-                        			toggle.addEventListener('click', function(e) {
-                        				e.stopPropagation();
-                        				var isVisible = dropdown.style.display === 'block';
-                        				dropdown.style.display = isVisible ? 'none' : 'block';
-                        				toggle.setAttribute('aria-expanded', isVisible ? 'false' : 'true');
-                        				// Rotate chevron
-                        				var chevron = toggle.querySelector('.fa-chevron-down');
-                        				if (chevron) {
-                        					chevron.style.transform = isVisible ? 'rotate(0deg)' : 'rotate(180deg)';
-                        				}
-                        			});
+                                function closeUserMenu(toggle) {
+                                    var dropdown = toggle.parentElement.querySelector('.user-dropdown-menu');
+                                    var chevron = toggle.querySelector('.fa-chevron-down');
+                                    dropdown.style.display = 'none';
+                                    toggle.setAttribute('aria-expanded', 'false');
+                                    if (chevron) {
+                                        chevron.style.transform = 'rotate(0deg)';
+                                    }
+                                }
 
-                        			// Close dropdown when clicking outside
-                        			document.addEventListener('click', function(e) {
-                        				if (!toggle.contains(e.target) && !dropdown.contains(e.target)) {
-                        					dropdown.style.display = 'none';
-                        					toggle.setAttribute('aria-expanded', 'false');
-                        					var chevron = toggle.querySelector('.fa-chevron-down');
-                        					if (chevron) {
-                        						chevron.style.transform = 'rotate(0deg)';
-                        					}
-                        				}
-                        			});
-                        		}
-                        	});
+                                toggles.forEach(function(toggle) {
+                                    var dropdown = toggle.parentElement.querySelector('.user-dropdown-menu');
+                                    toggle.addEventListener('click', function(e) {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        var isVisible = dropdown.style.display === 'block';
+                                        dropdown.style.display = isVisible ? 'none' : 'block';
+                                        toggle.setAttribute('aria-expanded', isVisible ? 'false' : 'true');
+                                        var chevron = toggle.querySelector('.fa-chevron-down');
+                                        if (chevron) {
+                                            chevron.style.transform = isVisible ? 'rotate(0deg)' : 'rotate(180deg)';
+                                        }
+                                    });
+                                });
+
+                                document.addEventListener('click', function(e) {
+                                    toggles.forEach(function(toggle) {
+                                        if (!toggle.parentElement.contains(e.target)) {
+                                            closeUserMenu(toggle);
+                                        }
+                                    });
+                                });
+                            });
                         </script>

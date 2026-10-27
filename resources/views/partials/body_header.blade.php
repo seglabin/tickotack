@@ -7,6 +7,201 @@
     width: 40px;
     height: 40px;
   }
+
+  @media (max-width: 767px) {
+    .front-mobile-menu {
+      position: relative;
+      z-index: 1001;
+    }
+
+    .front-mobile-menu .navbar-header {
+      display: block;
+    }
+
+    .front-mobile-menu .mobile-menu-toggle {
+      display: inline-flex;
+      min-height: 44px;
+      align-items: center;
+      gap: 9px;
+      padding: 0 16px;
+      border: 0;
+      border-radius: 6px;
+      background: #ffd200;
+      color: #25332b;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .front-mobile-menu .mobile-menu-toggle:focus-visible,
+    .front-mobile-menu .closebtn:focus-visible,
+    .front-mobile-menu .front-mobile-links a:focus-visible {
+      outline: 3px solid #287a48;
+      outline-offset: 2px;
+    }
+
+    .front-mobile-menu .sidenav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 1003;
+      display: block;
+      width: min(340px, calc(100vw - 48px));
+      height: 100vh;
+      height: 100dvh;
+      padding: 0 0 24px;
+      overflow-x: hidden;
+      overflow-y: auto;
+      background: #fff;
+      transform: translateX(-105%);
+      transition: transform .25s ease;
+      visibility: hidden;
+    }
+
+    body.active .front-mobile-menu .sidenav {
+      width: min(340px, calc(100vw - 48px));
+      overflow-y: auto;
+      transform: translateX(0);
+      visibility: visible;
+    }
+
+    body.active {
+      overflow: hidden;
+    }
+
+    body.active::before {
+      display: none;
+    }
+
+    .front-mobile-menu .close-nav {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 58px;
+      padding: 12px 18px;
+      background: #185333;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+
+    .front-mobile-menu .closebtn {
+      display: inline-flex;
+      width: 40px;
+      height: 40px;
+      align-items: center;
+      justify-content: center;
+      border: 0;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, .12);
+      color: #fff;
+      cursor: pointer;
+    }
+
+    .front-mobile-menu .close-nav i {
+      color: inherit;
+    }
+
+    .front-mobile-menu .front-mobile-category-title {
+      margin: 12px 16px 4px;
+      padding-top: 12px;
+      border-top: 1px solid #e7ede8;
+      color: #6d7b72;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .front-mobile-menu .front-mobile-links {
+      display: block;
+      float: none;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+    }
+
+    .front-mobile-menu .front-mobile-links > li {
+      display: block;
+      float: none;
+      margin: 0;
+      border-bottom: 1px solid #edf0ed;
+    }
+
+    .front-mobile-menu .front-mobile-links > li > a {
+      display: flex;
+      min-height: 48px;
+      align-items: center;
+      padding: 12px 18px;
+      color: #25332b;
+      font-size: 15px;
+      font-weight: 600;
+      white-space: normal;
+    }
+
+    .front-mobile-menu .front-mobile-links > li > a:hover,
+    .front-mobile-menu .front-mobile-links > li > a:focus {
+      background: #f3f8f4;
+      color: #185333;
+    }
+
+    .front-mobile-menu .front-menu-back-button {
+      min-height: 44px;
+      margin: 8px 16px;
+      padding: 0 14px;
+      border: 1px solid #d5e5d7;
+      border-radius: 6px;
+      background: #f3f8f4;
+      color: #185333;
+      font-weight: 700;
+    }
+
+    .front-mobile-menu .user-menu-dropdown {
+      padding: 12px 16px !important;
+    }
+
+    .front-mobile-menu .user-menu-toggle {
+      width: 100%;
+      min-height: 46px;
+      justify-content: flex-start;
+      border-color: #e7ede8 !important;
+      background: #f3f8f4 !important;
+      color: #25332b !important;
+    }
+
+    .front-mobile-menu .user-dropdown-menu {
+      position: static !important;
+      top: auto !important;
+      right: auto !important;
+      width: 100% !important;
+      min-width: 0 !important;
+      max-width: none !important;
+      margin-top: 8px;
+      box-shadow: none !important;
+    }
+
+    .front-mobile-menu .user-dropdown-menu a {
+      white-space: normal;
+    }
+
+    .front-menu-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 1002;
+      display: none;
+      width: 100%;
+      height: 100%;
+      border: 0;
+      background: rgba(18, 30, 22, .58);
+    }
+
+    body.active .front-menu-backdrop {
+      display: block;
+    }
+  }
 </style>
 @php
 use Illuminate\Support\Facades\DB;
@@ -419,7 +614,7 @@ $nbre = count($panier);
     vertical-align: middle;
   }
 
-  .allmenu .static-menu #userMenuToggle {
+  .allmenu .static-menu .user-menu-toggle {
     min-height: 42px;
     padding: 5px 12px;
     border-color: rgba(255, 255, 255, 0.35) !important;
@@ -427,14 +622,14 @@ $nbre = count($panier);
     color: #fff !important;
   }
 
-  .allmenu .static-menu #userMenuToggle:hover,
-  .allmenu .static-menu #userMenuToggle:focus {
+  .allmenu .static-menu .user-menu-toggle:hover,
+  .allmenu .static-menu .user-menu-toggle:focus {
     border-color: rgba(255, 255, 255, 0.65) !important;
     background: rgba(255, 255, 255, 0.22) !important;
     color: #fff !important;
   }
 
-  .allmenu .static-menu #userMenuToggle:focus-visible {
+  .allmenu .static-menu .user-menu-toggle:focus-visible {
     outline: 2px solid #fff;
     outline-offset: 2px;
   }
@@ -451,7 +646,7 @@ $nbre = count($panier);
     flex-shrink: 0;
   }
 
-  .allmenu .static-menu #userDropdownMenu {
+  .allmenu .static-menu .user-dropdown-menu {
     top: calc(100% + 8px) !important;
     width: 300px;
     max-width: calc(100vw - 24px);
@@ -532,29 +727,56 @@ $nbre = count($panier);
         </div>
 
         {{-- Mobile menu --}}
-        <div class="hidden-sm hidden-md hidden-lg">
-          <nav id="menu" class="navbar">
+        <div class="hidden-sm hidden-md hidden-lg front-mobile-menu">
+          <nav id="mobile-category-menu" class="navbar">
             <div class="navbar-header">
-              <button type="button" class="btn btn-navbar" onclick="openNav()" data-toggle="collapse" data-target=".navbar-ex1-collapse">
-                <i class="fa fa-bars"></i>
+              <button type="button" class="btn btn-navbar mobile-menu-toggle" aria-controls="mySidenav" aria-expanded="false">
+                <i class="fa fa-bars" aria-hidden="true"></i> <span>Menu</span>
               </button>
             </div>
 
-            <div id="mySidenav" class="sidenav">
+            <div id="mySidenav" class="sidenav" aria-hidden="true">
               <div class="close-nav">
-                <span class="categories">Category</span>
-                <a href="javascript:void(0)" class="closebtn" onclick="closeNav()"><i class="fa fa-close"></i></a>
+                <span class="categories">Menu principal</span>
+                <button type="button" class="closebtn" aria-label="Fermer le menu"><i class="fa fa-close" aria-hidden="true"></i></button>
               </div>
 
-              <div class="collapse navbar-collapse navbar-ex1-collapse">
-                <ul class="nav navbar-nav">
+              <nav class="front-mobile-primary" aria-label="Navigation principale">
+                <ul class="nav navbar-nav front-mobile-links">
+                  <li><a href="{{ route('home') }}">Accueil</a></li>
+                  <li><a href="{{ route('category') }}">Catalogue</a></li>
+                  <li><a href="{{ route('brands') }}">Marques</a></li>
+                  <li><a href="{{ route('contact') }}">Contact</a></li>
+                  <li><a href="{{ route('suivicoli') }}">Suivi des colis</a></li>
+                  @if(Auth::check())
+                    @php
+                      $menusUser = session('menusUser');
+                    @endphp
+                    @if(is_array($menusUser) && in_array(11, $menusUser))
+                      <li>
+                        <button type="button" class="front-menu-back-button" onclick="afficher('back');">
+                          <i class="fa fa-arrow-left" aria-hidden="true"></i> Administration
+                        </button>
+                      </li>
+                    @endif
+                    @include('back.includes.menuAuth')
+                  @else
+                    <li><a href="{{ route('login') }}">Se connecter</a></li>
+                  @endif
+                </ul>
+              </nav>
+
+              <h2 class="front-mobile-category-title">Catégories</h2>
+              <nav aria-label="Catégories">
+                <ul class="nav navbar-nav front-mobile-links">
                   @foreach($navCategories as $c)
                   <li><a href="{{ route('category', ['slug' => $c->id]) }}">{{ $c->libelle }}</a></li>
                   @endforeach
                 </ul>
-              </div>
+              </nav>
             </div>
           </nav>
+          <button type="button" class="front-menu-backdrop" aria-label="Fermer le menu"></button>
         </div>
 
         <script>
@@ -574,6 +796,44 @@ $nbre = count($panier);
           jQuery(window).scroll(function() {
             headermenu();
           });
+
+          (function() {
+            var menu = document.getElementById('mySidenav');
+            var toggle = document.querySelector('.mobile-menu-toggle');
+            var close = document.querySelector('.front-mobile-menu .closebtn');
+            var backdrop = document.querySelector('.front-menu-backdrop');
+
+            if (!menu || !toggle || !close || !backdrop) {
+              return;
+            }
+
+            function closeMenu() {
+              document.body.classList.remove('active');
+              menu.setAttribute('aria-hidden', 'true');
+              toggle.setAttribute('aria-expanded', 'false');
+              toggle.focus();
+            }
+
+            toggle.addEventListener('click', function() {
+              document.body.classList.add('active');
+              menu.setAttribute('aria-hidden', 'false');
+              toggle.setAttribute('aria-expanded', 'true');
+              close.focus();
+            });
+
+            close.addEventListener('click', closeMenu);
+            backdrop.addEventListener('click', closeMenu);
+            menu.addEventListener('click', function(event) {
+              if (event.target.closest('a') && !event.target.closest('.user-menu-toggle')) {
+                closeMenu();
+              }
+            });
+            document.addEventListener('keydown', function(event) {
+              if (event.key === 'Escape' && document.body.classList.contains('active')) {
+                closeMenu();
+              }
+            });
+          })();
         </script>
       </div>
 
@@ -606,46 +866,51 @@ $nbre = count($panier);
         @if(Auth::check())
         <script>
           (function() {
-            var toggle = document.getElementById('userMenuToggle');
-            var dropdown = document.getElementById('userDropdownMenu');
+            var toggles = document.querySelectorAll('.user-menu-toggle');
 
-            if (!toggle || !dropdown) {
-              return;
-            }
-
-            function closeMenu() {
+            function closeMenu(toggle) {
+              var dropdown = toggle.parentElement.querySelector('.user-dropdown-menu');
+              var chevron = toggle.querySelector('.fa-chevron-down');
               dropdown.style.display = 'none';
               toggle.setAttribute('aria-expanded', 'false');
-              var chevron = toggle.querySelector('.fa-chevron-down');
               if (chevron) {
                 chevron.style.transform = 'rotate(0deg)';
               }
             }
 
-            toggle.addEventListener('click', function(event) {
-              event.preventDefault();
-              event.stopPropagation();
+            toggles.forEach(function(toggle) {
+              var dropdown = toggle.parentElement.querySelector('.user-dropdown-menu');
+              toggle.addEventListener('click', function(event) {
+                event.preventDefault();
+                event.stopPropagation();
 
-              var isOpen = dropdown.style.display === 'block';
-              dropdown.style.display = isOpen ? 'none' : 'block';
-              toggle.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+                var isOpen = dropdown.style.display === 'block';
+                dropdown.style.display = isOpen ? 'none' : 'block';
+                toggle.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
 
-              var chevron = toggle.querySelector('.fa-chevron-down');
-              if (chevron) {
-                chevron.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
-              }
+                var chevron = toggle.querySelector('.fa-chevron-down');
+                if (chevron) {
+                  chevron.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
+                }
+              });
             });
 
             document.addEventListener('click', function(event) {
-              if (!toggle.contains(event.target) && !dropdown.contains(event.target)) {
-                closeMenu();
-              }
+              toggles.forEach(function(toggle) {
+                if (!toggle.parentElement.contains(event.target)) {
+                  closeMenu(toggle);
+                }
+              });
             });
 
             document.addEventListener('keydown', function(event) {
-              if (event.key === 'Escape' && dropdown.style.display === 'block') {
-                closeMenu();
-                toggle.focus();
+              if (event.key === 'Escape') {
+                toggles.forEach(function(toggle) {
+                  if (toggle.getAttribute('aria-expanded') === 'true') {
+                    closeMenu(toggle);
+                    toggle.focus();
+                  }
+                });
               }
             });
           })();

@@ -294,7 +294,7 @@
                     <h5 class="modal-title text-white" id="modalNouveauActeurLabel">
                         <i class="fa fa-user-plus me-2"></i> Nouvel Acteur
                     </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="close text-white" data-bs-dismiss="modal" aria-label="Fermer"><span aria-hidden="true">&times;</span></button>
                 </div>
                 <div class="modal-body p-4">
                     <div id="alertModalActeur" class="alert alert-danger d-none mb-3"></div>
@@ -362,7 +362,7 @@
             <div class="modal-content rounded-4 shadow">
                 <div class="modal-header bg-primary text-white">
                     <h5 class="modal-title text-white" id="modalCalculPoidsLabel">Calcul du CBM par colis</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                    <button type="button" class="close text-white" data-bs-dismiss="modal" aria-label="Fermer"><span aria-hidden="true">&times;</span></button>
                 </div>
                 <div class="modal-body">
                     <div class="table-responsive">
@@ -407,7 +407,7 @@
             $('#alertModalActeur').addClass('d-none').text('');
 
             // Ouvrir la modal Bootstrap
-            $('#modalNouveauActeur').modal('show');
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('modalNouveauActeur')).show();
         }
 
         function soumettreNouvelActeur() {
@@ -429,7 +429,7 @@
             const form = document.getElementById('formModalActeur');
             const formData = new FormData(form);
 
-            fetch('/enregistrer-acteur-ajax', {
+            fetch(@json(url('enregistrer-acteur-ajax')), {
                     method: 'POST',
                     body: formData,
                     headers: {
@@ -437,17 +437,17 @@
                     }
                 })
                 .then(response => response.json().then(data => ({
-                    status: response.status,
+                    ok: response.ok,
                     body: data
                 })))
                 .then(({
-                    status,
+                    ok,
                     body
                 }) => {
                     btn.prop('disabled', false);
                     btn.html('<i class="fa fa-save me-1"></i> Enregistrer');
 
-                    if (body.success) {
+                    if (ok && body.success) {
                         const nouvelActeur = body.acteur;
                         const optTexte = nouvelActeur.nom + (nouvelActeur.tel ? ' (' + nouvelActeur.tel + ')' : '');
 
@@ -467,13 +467,14 @@
                         });
 
                         // Fermer la modal
-                        $('#modalNouveauActeur').modal('hide');
+                        bootstrap.Modal.getOrCreateInstance(document.getElementById('modalNouveauActeur')).hide();
                     } else {
                         alertBox.text(body.message || "Erreur lors de l'enregistrement de l'acteur.");
                         alertBox.removeClass('d-none');
                     }
                 })
                 .catch(error => {
+                    console.error('Erreur lors de la création de l’acteur :', error);
                     btn.prop('disabled', false);
                     btn.html('<i class="fa fa-save me-1"></i> Enregistrer');
                     alertBox.text("Une erreur est survenue lors de la communication avec le serveur.");

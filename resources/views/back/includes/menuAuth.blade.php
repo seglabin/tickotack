@@ -4,7 +4,7 @@ $menusUser = session('menusUser');
 @endphp
 
 <li class="user-menu-dropdown" style="position:relative;list-style:none;">
-    <a href="javascript:void(0)" id="userMenuToggle" aria-haspopup="true" aria-expanded="false" style="display:flex;align-items:center;gap:8px;padding:6px 14px;border-radius:50px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);color:inherit;text-decoration:none;transition:all 0.3s ease;cursor:pointer;">
+    <a href="javascript:void(0)" class="user-menu-toggle" aria-haspopup="true" aria-expanded="false" style="display:flex;align-items:center;gap:8px;padding:6px 14px;border-radius:50px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);color:inherit;text-decoration:none;transition:all 0.3s ease;cursor:pointer;">
         <span class="user-menu-avatar" style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-weight:600;font-size:14px;">
             {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
         </span>
@@ -15,7 +15,7 @@ $menusUser = session('menusUser');
     </a>
 
     <!-- Dropdown Menu -->
-    <div id="userDropdownMenu" style="display:none;position:absolute;top:calc(100% + 10px);right:0;min-width:260px;background:#fff;border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,0.15);border:1px solid rgba(0,0,0,0.06);z-index:9999;overflow:hidden;">
+    <div class="user-dropdown-menu" style="display:none;position:absolute;top:calc(100% + 10px);right:0;min-width:260px;background:#fff;border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,0.15);border:1px solid rgba(0,0,0,0.06);z-index:9999;overflow:hidden;">
 
         <!-- User Info Header -->
         <div class="user-menu-header" style="padding:16px 20px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;">

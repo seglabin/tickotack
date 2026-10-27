@@ -476,17 +476,34 @@
     }
 
     .storefront-home .home-hero-slide {
-      min-height: 300px;
-      padding: 26px 22px;
+      min-height: 0;
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 12px;
+      padding: 22px 18px;
+    }
+
+    .storefront-home .home-hero-copy,
+    .storefront-home .home-hero-image {
+      width: 100%;
+    }
+
+    .storefront-home .home-hero-copy h1 {
+      font-size: clamp(26px, 7vw, 36px);
+    }
+
+    .storefront-home .home-hero-description {
+      margin-bottom: 16px;
     }
 
     .storefront-home .home-hero-image {
-      height: 210px;
+      height: 170px;
     }
 
     .storefront-home .home-hero-art {
-      height: 170px;
-      font-size: 66px;
+      width: 100%;
+      height: 140px;
+      font-size: 56px;
     }
 
     .storefront-home .home-category-promo {
@@ -495,6 +512,7 @@
 
     .storefront-home .home-section-heading {
       align-items: flex-start;
+      gap: 10px;
     }
 
     .storefront-home .home-section-heading h2,
@@ -506,40 +524,78 @@
       padding: 8px 0;
     }
 
+    .storefront-home .home-product-tabs {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding: 2px 0 8px;
+      scrollbar-width: thin;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .storefront-home .home-product-tabs > li {
+      flex: 0 0 auto;
+    }
+
+    .storefront-home .home-product-tabs > li > a {
+      white-space: nowrap;
+    }
+
+    .storefront-home .home-product-card .caption {
+      padding: 10px;
+    }
+
+    .storefront-home .home-product-card h3 {
+      min-height: 0;
+      overflow-wrap: anywhere;
+    }
+
     .storefront-home .home-tracking-content {
       align-items: flex-start;
       flex-direction: column;
     }
 
+    .storefront-home .home-tracking-button {
+      width: 100%;
+      min-height: 46px;
+    }
+
     #content.storefront-home .product-thumb .image {
-      height: 160px;
+      height: 145px;
     }
   }
 
   @media (max-width: 480px) {
-    .storefront-home .home-hero-slide {
-      align-items: flex-start;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .storefront-home .home-hero-copy,
     .storefront-home .home-hero-image {
-      width: 100%;
-    }
-
-    .storefront-home .home-hero-image {
-      height: 135px;
+      height: 125px;
     }
 
     .storefront-home .home-hero-art {
-      width: 100%;
-      height: 110px;
+      height: 105px;
       font-size: 48px;
     }
 
     .storefront-home .home-section-heading {
       flex-direction: column;
+    }
+
+    .storefront-home .home-hero-actions {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .storefront-home .home-hero-button {
+      width: 100%;
+      text-align: center;
+    }
+
+    .storefront-home .home-benefit {
+      align-items: flex-start;
+    }
+
+    #content.storefront-home .product-thumb .image {
+      height: 125px;
     }
   }
 
