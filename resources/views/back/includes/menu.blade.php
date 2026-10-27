@@ -156,6 +156,9 @@
 											<a href="{{ url('site') }}"><i class="fa fa-globe" aria-hidden="true"></i> Site</a>
 										</li>
 									</ul>
+									<ul class="navigation back-mobile-user-menu" aria-label="Menu utilisateur">
+										@include('back.includes.menuAuth')
+									</ul>
                         			<div class="tgmobile__menu-outer">
                         				<!--Here Menu Will Come Automatically Via Javascript / Same Menu as in Header-->
                         			</div>
