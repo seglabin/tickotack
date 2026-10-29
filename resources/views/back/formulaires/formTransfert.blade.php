@@ -130,7 +130,7 @@
         <div class="card-body">
             <div class="form-group">
                 <label for="taux" class="lelabel">Taux de change (*)</label>
-                <input type="hidden" id="operateur" name="operateur" value="*">
+                <input type="hidden" id="operateur" name="operateur" value="{{ $operaeur }}">
                 <input type="text" class="form-control" id="taux" name="taux"
                     placeholder="Généré automatiquement"
                     value="{{ $tauxDefaut }}" readonly style="background-color: #f8f9fa; cursor: not-allowed; font-weight: bold;">

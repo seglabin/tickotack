@@ -228,6 +228,9 @@ class ExpeditionController extends Controller
                 $e->idtypcolis       = ($request->idtypcolis && $request->idtypcolis != '0') ? $request->idtypcolis : null;
                 $e->idtypenvoi       = ($request->idtypenvoi && $request->idtypenvoi != '0') ? $request->idtypenvoi : null;
                 $e->idcaisse       = ($request->idcaisse && $request->idcaisse != '0') ? $request->idcaisse : null;
+                if ($id == 0 || $id == null) {
+                    $e->iduser = Auth::id();
+                }
 
                 if ($e->save()) {
                     // if ($id == 0 || $id == null)  Enregistrement opération financière (ENTREE du montant déposé dans la caisse source)

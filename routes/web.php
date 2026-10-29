@@ -36,6 +36,8 @@ Route::get('/logout', [App\Http\Controllers\AuthController::class, 'logout']);
 
 
 Route::middleware(['auth'])->group(function () {
+    Route::get('/historique-actions', [App\Http\Controllers\DatabaseAuditController::class, 'index'])
+        ->name('admin.historique-actions');
 
     Route::get('/typecolis', function () {
         session(['nomtable' => 'typecolis']);
@@ -208,9 +210,9 @@ Route::middleware(['auth'])->group(function () {
     // });
 
 
-    Route::get('/transfert/{id}/recu-depot-transfert', 'App\\Http\\Controllers\\impressionController@recuTransfertDepot')->name('transfert.recu');
-    Route::get('/transfert/{id}/recu-retrait-transfert', 'App\\Http\\Controllers\\impressionController@recuTransfertRetrait')->name('transfert.recu');
-    Route::get('/transfert/{id}/recu', 'App\\Http\\Controllers\\impressionController@recuTransfert')->name('transfert.recu');
+    Route::get('/transfert/{id}/recu-depot-transfert', 'App\\Http\\Controllers\\ImpressionController@recuTransfertDepot')->name('transfert.recu');
+    Route::get('/transfert/{id}/recu-retrait-transfert', 'App\\Http\\Controllers\\ImpressionController@recuTransfertRetrait')->name('transfert.recu');
+    Route::get('/transfert/{id}/recu', 'App\\Http\\Controllers\\ImpressionController@recuTransfert')->name('transfert.recu');
     // Route::get('/transfert/{id}/recu', 'App\\Http\\Controllers\\TransfertController@recu')->name('transfert.recu');
 
 

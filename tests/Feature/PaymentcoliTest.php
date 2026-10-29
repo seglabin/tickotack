@@ -37,6 +37,11 @@ class PaymentcoliTest extends TestCase
             'montant' => '60.00',
             'payment_date' => '2026-10-19 10:00:00',
         ])->assertOk()->assertJsonPath('success', true);
+        $this->assertDatabaseHas('paymentcolis', [
+            'idcolis' => $expeditionId,
+            'montant' => 60,
+            'iduser' => auth()->id(),
+        ]);
 
         $this->post(route('paymentcolis.enregistrer'), [
             'idcolis' => $expeditionId,

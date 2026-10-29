@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 
 class PaymentcoliController extends Controller
 {
@@ -64,6 +65,7 @@ class PaymentcoliController extends Controller
 
             DB::table('paymentcolis')->insert([
                 'idcolis' => $expedition->id,
+                'iduser' => Auth::id(),
                 'montant' => $montant,
                 'payment_date' => \Illuminate\Support\Carbon::parse($donnees['payment_date'])->format('Y-m-d H:i:s'),
                 'created_at' => now(),

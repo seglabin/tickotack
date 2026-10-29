@@ -142,7 +142,7 @@ function valideretraitransfert(id){
   }
   formData.append('_token',       csrfToken);
 
-  fetch('/enregistrer-retraitransfert', {
+  fetch(urlApplication('enregistrer-retraitransfert'), {
     method: 'POST',
     headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
     body: formData
@@ -430,7 +430,7 @@ function ouvrirModalRetrait(id) {
     var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
     modal.show();
 
-    fetch("/api/retraitransfert/" + id)
+    fetch(urlApplication("api/retraitransfert/" + encodeURIComponent(id)))
         .then((response) => {
             if (!response.ok) throw new Error("HTTP " + response.status);
             return response.text();

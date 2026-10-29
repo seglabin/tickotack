@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\approcaisse;
 use App\Models\element;
 use App\Models\caisse;
+use Illuminate\Support\Facades\Auth;
 
 
 class ApprocaisseController extends Controller
@@ -15,13 +16,15 @@ class ApprocaisseController extends Controller
     {
         try {
             $titre = "Liste des approvisionnements des caisses";
+            $isAdmin = (int) (Auth::user()->idrole ?? 0) === 1;
             $donnees = collect(DB::select("
-            SELECT a.id, a.dateappro, a.montant, a.observation, s.libelle as source, c.libelle as caisse
+            SELECT a.id, a.iduser, CASE WHEN ? = 1 OR a.iduser = ? THEN 1 ELSE 0 END AS peutmodifier,
+                   a.dateappro, a.montant, a.observation, s.libelle as source, c.libelle as caisse
             FROM approcaisses a
             LEFT JOIN elements s ON s.id = a.idsource
             LEFT JOIN caisses c ON c.id = a.idcaisse
             ORDER BY a.dateappro desc
-            "));
+            ", [$isAdmin ? 1 : 0, Auth::id()]));
             
             $nouv = '/ajout-approcaisse';
             $entete = 'Date|Montant|Observation|Source|Caisse';
@@ -59,7 +62,10 @@ class ApprocaisseController extends Controller
         session(['module' => 'approcaisse']);
         $valider = "enregistrer-approcaisse";
 
-        $lenregistrement = ($id != null) ? approcaisse::find($id) : null;
+        $lenregistrement = ($id != null) ? approcaisse::findOrFail($id) : null;
+        if ($lenregistrement) {
+            $this->authorizeRecordOwner($lenregistrement);
+        }
         $sourcesele  = element::where('nomtable', 'sourceappro')->orderBy('libelle')->get();
         $caisses = caisse::orderBy('libelle')->get();
 
@@ -75,9 +81,14 @@ class ApprocaisseController extends Controller
 
     public function enregistrer(Request $request)
     {
+        $id = $request->input('idenreg');
+        $existing = ($id != 0 && $id != null) ? approcaisse::findOrFail($id) : null;
+        if ($existing) {
+            $this->authorizeRecordOwner($existing);
+        }
+
        // dd($request);
         try {
-            $id = $request->input('idenreg');
             if ($id == 0 || $id == null) {
                 $doub = approcaisse::where('dateappro', $request->dateappro)
                     ->where('idsource', $request->idsource)
@@ -89,7 +100,7 @@ class ApprocaisseController extends Controller
                     ->where('idsource', $request->idsource)
                     ->where('idcaisse', $request->idcaisse)
                     ->where('id', '!=', $id)->get();
-                $e = approcaisse::findOrFail($id);
+                $e = $existing;
             }
             
 
@@ -99,6 +110,9 @@ class ApprocaisseController extends Controller
                 $e->observation    = $request->observation;
                 $e->idsource     = $request->idsource;
                 $e->idcaisse = ($request->idcaisse && $request->idcaisse != '0') ? $request->idcaisse : null;
+                if ($id == 0 || $id == null) {
+                    $e->iduser = Auth::id();
+                }
                if($e->save()){
                
                 $rk = "SELECT id FROM operationfinancieres WHERE idcaisse = '".$request->idcaisse."' AND libsrce = 'approcaisses' AND idsrce = '".$e->id."'";
@@ -123,6 +137,9 @@ class ApprocaisseController extends Controller
 
     public function supprimer($id)
     {
+        $approvisionnement = approcaisse::findOrFail($id);
+        $this->authorizeRecordOwner($approvisionnement);
+
         try {
             $hasTransferts = DB::table('transferts')
                 ->where('idexpediteur', $id)
@@ -130,8 +147,7 @@ class ApprocaisseController extends Controller
                 ->exists();
 
             if (!$hasTransferts) {
-                $e = approcaisse::findOrFail($id);
-                $e->delete();
+                $approvisionnement->delete();
                 return redirect()->route('approcaisse');
             } else {
                 $info = "Cet approvisionnement est lié à au moins un transfert.\nVous ne pouvez pas le supprimer.";

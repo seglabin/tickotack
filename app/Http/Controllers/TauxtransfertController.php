@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\tauxtransfert;
 use App\Models\adresse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 
 class TauxtransfertController extends Controller
 {
@@ -59,6 +60,7 @@ class TauxtransfertController extends Controller
         $valider = "enregistrer-tauxtransfert";
 
         $lenregistrement = ($id != null) ? tauxtransfert::find($id) : null;
+      
         $departs = adresse::orderBy('libelle')->orderByDesc('libelle')->get();
         $destinations = adresse::orderBy('libelle')->orderByDesc('libelle')->get();
 
@@ -96,6 +98,9 @@ class TauxtransfertController extends Controller
                 $e->iddestination        = $request->iddestination;
                 $e->taux   = sansespace($request->taux);
                 $e->operateur = sansespace($request->operateur);
+                if ($id == 0 || $id == null) {
+                    $e->iduser = Auth::id();
+                }
                if($e->save()){
                 return redirect()->route('tauxtransfert');
                }else{

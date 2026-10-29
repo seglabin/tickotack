@@ -22,12 +22,14 @@ $idrole  = $u != null ? $u->idrole:null;
 
 $cond = ($idrole != 1)? " WHERE d.iduser = '".$iduser."' ": "";
             $donnees = collect(DB::select("
-                SELECT d.id, d.datedepense, d.montantdepense, d.libelle, c.libelle as caisse
+                SELECT d.id, d.iduser,
+                       CASE WHEN d.iduser = ? OR ? = 1 THEN 1 ELSE 0 END AS peutmodifier,
+                       d.datedepense, d.montantdepense, d.libelle, c.libelle as caisse
                 FROM depenses d
                 LEFT JOIN caisses c ON c.id = d.idcaisse
                 ".$cond. "                
                 ORDER BY d.datedepense desc
-            "));
+            ", [$iduser, (int) $idrole === 1 ? 1 : 0]));
 
             $nouv = '/ajout-depense';
             $entete = 'Date|Libellé|Montant|Caisse';
@@ -64,7 +66,10 @@ $cond = ($idrole != 1)? " WHERE d.iduser = '".$iduser."' ": "";
         session(['module' => 'depense']);
         $valider = "enregistrer-depense";
 
-        $lenregistrement = ($id != null) ? depense::find($id) : null;
+        $lenregistrement = ($id != null) ? depense::findOrFail($id) : null;
+        if ($lenregistrement) {
+            $this->authorizeRecordOwner($lenregistrement);
+        }
         $caisses = caisse::orderBy('libelle')->get();
 
         return view('back.formulaire', compact(
@@ -78,9 +83,14 @@ $cond = ($idrole != 1)? " WHERE d.iduser = '".$iduser."' ": "";
 
     public function enregistrer(Request $request)
     {
+        $id = $request->input('idenreg');
+        $existing = ($id != 0 && $id != null) ? depense::findOrFail($id) : null;
+        if ($existing) {
+            $this->authorizeRecordOwner($existing);
+        }
+
        // dd($request);
         try {
-            $id = $request->input('idenreg');
             if ($id == 0 || $id == null) {
                 $doub = depense::where('datedepense', $request->datedepense)
                     ->where('idcaisse', $request->idcaisse)
@@ -90,7 +100,7 @@ $cond = ($idrole != 1)? " WHERE d.iduser = '".$iduser."' ": "";
                 $doub = depense::where('datedepense', $request->datedepense)
                     ->where('idcaisse', $request->idcaisse)
                     ->where('id', '!=', $id)->get();
-                $e = depense::findOrFail($id);
+                $e = $existing;
             }
             
 
@@ -100,7 +110,9 @@ $cond = ($idrole != 1)? " WHERE d.iduser = '".$iduser."' ": "";
                 $e->montantdepense        = sansespace($request->montantdepense);
                 $e->libelle    = $request->libelle;
                 $e->idcaisse = ($request->idcaisse && $request->idcaisse != '0') ? $request->idcaisse : null;
-                if($id == 0 || $id == null) $e->iduser = ($u != null) ? $u->id : null;
+                if ($id == 0 || $id == null) {
+                    $e->iduser = $u?->id;
+                }
                if($e->save()){
                
                 $rk = "SELECT id FROM operationfinancieres WHERE idcaisse = '".$request->idcaisse."' AND libsrce = 'depenses' AND idsrce = '".$e->id."'";
@@ -125,6 +137,9 @@ $cond = ($idrole != 1)? " WHERE d.iduser = '".$iduser."' ": "";
 
     public function supprimer($id)
     {
+        $depense = depense::findOrFail($id);
+        $this->authorizeRecordOwner($depense);
+
         try {
             $hasTransferts = DB::table('transferts')
                 ->where('idexpediteur', $id)
@@ -132,8 +147,7 @@ $cond = ($idrole != 1)? " WHERE d.iduser = '".$iduser."' ": "";
                 ->exists();
 
             if (!$hasTransferts) {
-                $e = depense::findOrFail($id);
-                $e->delete();
+                $depense->delete();
                 return redirect()->route('depense');
             } else {
                 $info = "Cette dépense est liée à au moins un transfert.\nVous ne pouvez pas la supprimer.";

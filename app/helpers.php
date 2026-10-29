@@ -279,11 +279,17 @@ function tableau_html($t, $liste_entete, $liste_colonne, $btn = "", $num = true,
             $html .= '<td style="white-space:nowrap;">';
             $actionsStart = strlen($html);
 
+            $valeurPeutModifier = is_array($v) ? ($v['peutmodifier'] ?? null) : ($v->peutmodifier ?? null);
+            $peutModifier = $valeurPeutModifier !== null
+                ? (string) $valeurPeutModifier === '1'
+                : ($maj == '1' || $maj == '');
+
             if ((strpos($btn, 'retraitransfert') !== false) && ($v->idetat == 1)) {
                 $iddestination = is_array($v) ? ($v['iddestination'] ?? '') : ($v->iddestination ?? '');
-                if (($iddestination == $idadrescaisseuser) || ($iduserRole == 1)) {
+                $idcreateur = is_array($v) ? ($v['iduser'] ?? null) : ($v->iduser ?? null);
+                if ($iduserRole == 1 || ($peutModifier && $iddestination == $idadrescaisseuser && (int) $idcreateur === (int) \Illuminate\Support\Facades\Auth::id())) {
                     $html .= '<input type="hidden" id="dataln' . $i . '" name="dataln' . $i . '" value="' . $dataln . '">';
-                    $html .= '<a href="#" class="btn btn-info btn-sm" onclick="ouvrirModalRetrait(\'' . $id . '\');" style="margin:0 2px; padding:6px 10px; font-size:14px;" title="Retrait de transfert" ><i class="fa fa-credit-card"></i></a>';
+                    $html .= '<button type="button" class="btn btn-info btn-sm" onclick="ouvrirModalRetrait(\'' . $id . '\');" style="margin:0 2px; padding:6px 10px; font-size:14px;" title="Retrait de transfert"><i class="fa fa-credit-card"></i></button>';
                 }   
                 
             }
@@ -363,13 +369,13 @@ function tableau_html($t, $liste_entete, $liste_colonne, $btn = "", $num = true,
                     }
                 }
             }
-            if ((strpos($btn, 'modifier') !== false) && ($maj == '1' || $maj == '')) {
+            if ((strpos($btn, 'modifier') !== false) && $peutModifier) {
                 $urlModifier = htmlspecialchars(url($cfmodif . '/' . $id), ENT_QUOTES, 'UTF-8');
                 $html .= $config === 'expedition'
                     ? '<a href="' . $urlModifier . '" class="dropdown-item"><i class="fa fa-edit me-2"></i>Modifier</a>'
                     : '<a href="' . $urlModifier . '" class="btn btn-warning btn-sm" style="margin:0 2px; padding:6px 10px; font-size:14px;" title="Modifier"><i class="fa fa-edit"></i></a>';
             }
-            if ((strpos($btn, 'supprimer') !== false) && ($maj == '1' || $maj == '')) {
+            if ((strpos($btn, 'supprimer') !== false) && $peutModifier) {
                 if ($config === 'utilisateur') {
                     $urlSupprimer = htmlspecialchars(route('utilisateur.supprimer', ['id' => $id]), ENT_QUOTES, 'UTF-8');
                     $html .= '<a href="' . $urlSupprimer . '" class="btn btn-danger btn-sm" onclick="return confirm(\'Voulez-vous vraiment supprimer cet utilisateur ?\');" style="margin:0 2px; padding:6px 10px; font-size:14px;" title="Supprimer"><i class="fa fa-trash"></i></a>';
@@ -557,6 +563,15 @@ function enregistreOperationFinanciere($sens, $montant, $idsrce, $libsrce, $idca
         //code...
         //`sens`, `montant`, `idsrce`, `libsrce`, `idcaisse`
         $operation = $id == null ? new App\Models\operationfinanciere() :  App\Models\operationfinanciere::find($id);
+        // if($id != null && $operation != null){
+        //     $ancienneMontant = $operation->montant;
+        //     if($ancienneMontant != $montant){
+        //         $caisse = App\Models\caisse::find($idcaisse);
+        //         $solde = soldeCaisse($idcaisse);
+        //         $caisse->montant = $solde - $ancienneMontant + $montant;
+        //         $caisse->save();
+        //     }
+        // }
         $operation->sens = $sens;
         $operation->montant = $montant;
         $operation->idsrce = $idsrce;
@@ -775,11 +790,12 @@ function afficheArticle($id)
     }
 }
 
-function transfertParCritere($critere = "")
+function transfertParCritere($critere = "", $iduser = null, $isAdmin = false)
 {
 
 $rekete = "
-            SELECT t.id, t.code, t.datetransfert, t.datepayement, t.montdepot, t.montretrait, t.montpaye,
+            SELECT t.id, t.iduser, CASE WHEN ? = 1 OR t.iduser = ? THEN 1 ELSE 0 END AS peutmodifier,
+                   t.code, t.datetransfert, t.datepayement, t.montdepot, t.montretrait, t.montpaye,
                 t.idexpediteur, t.idrecepteur, t.iddepart, t.iddestination, t.idmoyentransfert,
                    t.taux, t.observation, t.idetat maj,
                    exp.nom AS expediteur, rec.nom AS recepteur, t.idetat ,
@@ -799,7 +815,7 @@ $rekete = "
             ORDER BY t.datetransfert DESC
         ";
         // dd($rekete);
-    $transferts = collect(DB::select($rekete)); //->first(); WHERE t.id = ?
+    $transferts = collect(DB::select($rekete, [$isAdmin ? 1 : 0, $iduser])); //->first(); WHERE t.id = ?
 
     abort_unless($transferts, 404, 'Transfert introuvable.');
     return $transferts;

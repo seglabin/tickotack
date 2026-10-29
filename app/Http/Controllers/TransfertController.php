@@ -70,7 +70,7 @@ class TransfertController extends Controller
             }
 
             // dd($criteres);
-            $donnees = transfertParCritere($criteres);
+            $donnees = transfertParCritere($criteres, Auth::id(), (int) $iduserRole === 1);
             // dd($d);
           
             $adresses = adresse::orderBy('libelle')->get();
@@ -139,12 +139,15 @@ class TransfertController extends Controller
                 LEFT JOIN adresses dest ON dest.id = t.iddestination
                 LEFT JOIN moyentransferts m ON m.id = t.idmoyentransfert
                 LEFT JOIN elements e ON e.id = t.idetat
-                WHERE t.id = $id;
-            "))->first();
+                WHERE t.id = ?;
+            ", [$id]))->first();
             // $transfert = transfert::find($id);
             // dd($transfert);
             if (!$transfert) {
                 return '<div class="alert alert-danger">Transfert introuvable.</div>';
+            }
+            if (!$this->userCanModifyRecord(transfert::findOrFail($id))) {
+                return response('<div class="alert alert-danger">Vous ne pouvez pas retirer ce transfert.</div>', 403);
             }
 
 
@@ -239,14 +242,22 @@ class TransfertController extends Controller
 
     public function validerRetrait(Request $request)
     {
+        $id = $request->input('idtransfert');
+        if (!$id) {
+            return response()->json(['success' => false, 'message' => 'Identifiant du transfert manquant.'], 422);
+        }
+
+        $transfert = transfert::find($id);
+        if (!$transfert) {
+            return response()->json(['success' => false, 'message' => 'Transfert introuvable.'], 404);
+        }
+        if (!$this->userCanModifyRecord($transfert)) {
+            return response()->json(['success' => false, 'message' => 'Vous ne pouvez pas retirer ce transfert.'], 403);
+        }
+
         try {
-            $id            = $request->input('idtransfert');
             $datepayement  = $request->input('datepayement');
             $observation   = $request->input('observation');
-
-            if (!$id) {
-                return response()->json(['success' => false, 'message' => 'Identifiant du transfert manquant.'], 422);
-            }
 
             if (!$datepayement) {
                 return response()->json(['success' => false, 'message' => 'La date de paiement est obligatoire.'], 422);
@@ -263,7 +274,6 @@ class TransfertController extends Controller
                 'carte_recepteur.max' => 'L\'image de la carte ne doit pas dépasser 5 Mo.',
             ]);
 
-            $transfert = transfert::findOrFail($id);
             $recepteur = acteur::findOrFail($transfert->idrecepteur);
 
             if ($request->hasFile('carte_recepteur')) {
@@ -341,7 +351,17 @@ class TransfertController extends Controller
         session(['module' => 'transfert']);
         $valider = "enregistrer-transfert";
 
-        $lenregistrement = ($id != null) ? transfert::find($id) : null;
+        $lenregistrement = ($id != null) ? transfert::findOrFail($id) : null;
+        if ($lenregistrement) {
+            $this->authorizeRecordOwner($lenregistrement);
+        }
+      
+         $operaeur =  null;
+       if($lenregistrement != null){
+        $rek = "SELECT operateur FROM tauxtransferts WHERE iddepart = '".$lenregistrement->iddepart."' AND iddestination = '".$lenregistrement->iddestination."'";
+        $operaeur = infoParRekete($rek, 'operateur');
+       }
+
         $caisses = caisse::select('id', 'libelle', 'idadresse')->orderBy('libelle')->get();
         $acteurs = acteur::orderBy('nom')->get();
         $adresses = adresse::orderBy('libelle')->get();
@@ -375,12 +395,19 @@ class TransfertController extends Controller
             'adresses',
             'moyentransferts',
             'etats',
-            'tauxGrille'
+            'tauxGrille',
+            'operaeur'
         ));
     }
 
     public function enregistrer(Request $request)
     {
+        $id = $request->input('idenreg');
+        $existing = ($id != 0 && $id != null) ? transfert::findOrFail($id) : null;
+        if ($existing) {
+            $this->authorizeRecordOwner($existing);
+        }
+
         try {
             $idcaisse = ($request->idcaisse && $request->idcaisse != '0') ? $request->idcaisse : null;
             $iddepart = $idcaisse
@@ -399,15 +426,13 @@ class TransfertController extends Controller
                 ]);
             }
 
-            $id = $request->input('idenreg');
-
             if ($id == 0 || $id == null) {
                 $doub = transfert::where('code', $request->code)->get();
                 $e = new transfert();
             } else {
                 $doub = transfert::where('code', $request->code)
                     ->where('id', '!=', $id)->get();
-                $e = transfert::findOrFail($id);
+                $e = $existing;
             }
 
             if (count($doub) == 0) {
@@ -427,10 +452,14 @@ class TransfertController extends Controller
                 $e->idetat           = ($request->idetat && $request->idetat != '0') ? $request->idetat : 1;
                 $e->idcaisse         = $idcaisse;
                 $e->iddepart         = $iddepart;
+                if ($id == 0 || $id == null) {
+                    $e->iduser = Auth::id();
+                }
 
                 if ($e->save()) {
                     // if ($id == 0 || $id == null)  Enregistrement opération financière (ENTREE du montant déposé dans la caisse source)
-                    if (($e->idcaisse && $e->montdepot > 0) && ($id == 0 || $id == null)) {
+                    if (($e->idcaisse && $e->montdepot > 0) ) {
+                    // if (($e->idcaisse && $e->montdepot > 0) && ($id == 0 || $id == null)) {
                         $rk = "SELECT id FROM operationfinancieres WHERE idcaisse = '" . $e->idcaisse . "' AND libsrce = 'transferts' AND idsrce = '" . $e->id . "'";
                         $idop = infoParRekete($rk, 'id');
                         enregistreOperationFinanciere('ENTREE', $e->montdepot, $e->id, 'transferts', $e->idcaisse, $idop);
@@ -452,16 +481,17 @@ class TransfertController extends Controller
 
     public function supprimer($id)
     {
-        try {
-            $e = transfert::findOrFail($id);
+        $transfert = transfert::findOrFail($id);
+        $this->authorizeRecordOwner($transfert);
 
+        try {
             // Supprimer les opérations financières rattachées
             DB::table('operationfinancieres')
                 ->where('libsrce', 'transferts')
                 ->where('idsrce', $id)
                 ->delete();
 
-            $e->delete();
+            $transfert->delete();
             return redirect()->route('transfert');
         } catch (\Exception $e) {
             return redirect()->route('transfert')->with('error', 'Erreur de suppression : ' . $e->getMessage());

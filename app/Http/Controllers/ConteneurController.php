@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use App\Models\conteneur;
 use App\Models\element;
 
@@ -210,6 +211,9 @@ if($request->idconsignataire==0) $request['idconsignataire'] =null;
         }
 
         $conteneur = $id ? conteneur::findOrFail($id) : new conteneur();
+        if (!$id) {
+            $conteneur->iduser = Auth::id();
+        }
         $conteneur->fill($validated);
         $conteneur->idetat = $validated['idetat'] ?? 1;
         $conteneur->save();

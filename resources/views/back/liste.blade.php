@@ -540,13 +540,11 @@ if(empty($conteneurs)) {
           <!-- Le contenu des informations sera chargé ici via AJAX -->
         </div>
       </div>
-
-    </div>
-    <div class="modal-footer">
-      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+      </div>
     </div>
   </div>
-</div>
 </div>
 
 <!-- Modale pour afficher les activités d'un projet/programme -->

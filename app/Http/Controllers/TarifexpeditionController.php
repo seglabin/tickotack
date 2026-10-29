@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use App\Models\tarifexpedition;
 use App\Models\element;
 use App\Models\adresse;
@@ -126,6 +127,9 @@ class TarifexpeditionController extends Controller
                 $e->idtypenvoi = ($request->idtypenvoi && $request->idtypenvoi != '0') ? $request->idtypenvoi : null;
                 $e->iddepart = ($request->iddepart && $request->iddepart != '0') ? $request->iddepart : null;
                 $e->iddestination = ($request->iddestination && $request->iddestination != '0') ? $request->iddestination : null;
+                if ($id == 0 || $id == null) {
+                    $e->iduser = Auth::id();
+                }
                 $e->save();
                 return redirect()->route('tarifexpedition');
             } else {
