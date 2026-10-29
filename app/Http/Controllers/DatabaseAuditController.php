@@ -27,6 +27,7 @@ class DatabaseAuditController extends Controller
             ->when($request->filled('action'), fn ($query) => $query->where('logs.action', $request->input('action')))
             ->when($request->filled('date_debut'), fn ($query) => $query->whereDate('logs.created_at', '>=', $request->input('date_debut')))
             ->when($request->filled('date_fin'), fn ($query) => $query->whereDate('logs.created_at', '<=', $request->input('date_fin')))
+            ->wherenotin('logs.table_name', ['database_audit_logs','sessions']) // Exclude logs from the audit table itself
             ->orderByDesc('logs.id')
             ->select([
                 'logs.*',
