@@ -23,12 +23,12 @@
   .audit-page .audit-stats { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 23px 0 12px; color: var(--audit-muted); font-size: 13px; }
   .audit-page .audit-stats strong { color: var(--audit-ink); }
   .audit-page .audit-table-wrap { overflow-x: auto; }
-  .audit-page .audit-table { width: 100%; min-width: 1000px; margin: 0; border-collapse: separate; border-spacing: 0; table-layout: fixed; }
+  .audit-page .audit-table { width: 100%; min-width: 1120px; margin: 0; border-collapse: separate; border-spacing: 0; table-layout: fixed; }
   .audit-page .audit-table th:nth-child(1) { width: 120px; }
   .audit-page .audit-table th:nth-child(2) { width: 190px; }
   .audit-page .audit-table th:nth-child(3) { width: 145px; }
-  .audit-page .audit-table th:nth-child(4) { width: 165px; }
-  .audit-page .audit-table th:nth-child(5) { width: 34%; }
+  .audit-page .audit-table th:nth-child(4) { width: 30%; }
+  .audit-page .audit-table th:nth-child(5) { width: 165px; }
   .audit-page .audit-table th:nth-child(6) { width: 230px; }
   .audit-page .audit-table thead th { padding: 13px 15px; border: 0; border-bottom: 1px solid var(--audit-border); background: #f6f8fa; color: #71808d; font-size: 10px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; white-space: nowrap; }
   .audit-page .audit-table tbody td { padding: 15px; border: 0; border-bottom: 1px solid #edf1f4; background: #fff; color: #40515e; font-size: 13px; vertical-align: top; }
@@ -46,6 +46,7 @@
   .audit-page .audit-action--delete { color: #a63c43; background: #fff0ef; }
   .audit-page .audit-action--replace { color: #5263a2; background: #eef0ff; }
   .audit-page .audit-table-name, .audit-page .audit-record-id, .audit-page .audit-ip { font-family: Consolas, monospace; font-size: 12px; }
+  .audit-page .audit-info { color: #344957; line-height: 1.55; overflow-wrap: anywhere; }
   .audit-page .audit-table-name { color: #347879; }
   .audit-page .audit-changes { display: grid; gap: 6px; min-width: 0; }
   .audit-page .audit-change { display: grid; grid-template-columns: minmax(85px, .7fr) minmax(0, 1.3fr); gap: 8px; padding: 7px 9px; border: 1px solid #e8edf2; border-radius: 7px; background: #fafbfd; }
@@ -152,8 +153,8 @@
             <th>Date et heure</th>
             <th>Utilisateur</th>
             <th>Action</th>
+            <th>Info</th>
             <th>Table / enregistrement</th>
-            <!-- <th>Changements</th> -->
             <th>Origine</th>
           </tr>
         </thead>
@@ -161,7 +162,6 @@
           @forelse($logs as $log)
           @php
             $nomUtilisateur = $log->user_name ?? $log->username ?? 'Utilisateur supprimé';
-            $changements = $log->changes ? json_decode($log->changes, true) : [];
             $libellesActions = ['INSERT' => 'Création', 'UPDATE' => 'Modification', 'DELETE' => 'Suppression', 'REPLACE' => 'Remplacement'];
           @endphp
           <tr>
@@ -179,34 +179,8 @@
                 {{ $libellesActions[$log->action] ?? $log->action }}
               </span>
             </td>
+            <td class="audit-info">{{ $log->info }}</td>
             <td><span class="audit-table-name">{{ $log->table_name }}</span><span class="audit-meta">ID : <span class="audit-record-id">{{ $log->record_id ?? '—' }}</span></span></td>
-            <!-- <td>
-              @if(is_array($changements) && count($changements))
-              <div class="audit-changes">
-                @foreach(array_slice($changements, 0, 3, true) as $champ => $valeurs)
-                <span class="audit-change">
-                  <span class="audit-change-name">{{ $champ }}</span>
-                  <span class="audit-change-value">{{ is_array($valeurs) ? ($valeurs['new'] ?? json_encode($valeurs, JSON_UNESCAPED_UNICODE)) : $valeurs }}</span>
-                </span>
-                @endforeach
-              </div>
-              @if(count($changements) > 3)
-              <details class="audit-more-changes">
-                <summary>Voir {{ count($changements) - 3 }} autre(s) champ(s)</summary>
-                <div class="audit-changes">
-                  @foreach(array_slice($changements, 3, null, true) as $champ => $valeurs)
-                  <span class="audit-change">
-                    <span class="audit-change-name">{{ $champ }}</span>
-                    <span class="audit-change-value">{{ is_array($valeurs) ? ($valeurs['new'] ?? json_encode($valeurs, JSON_UNESCAPED_UNICODE)) : $valeurs }}</span>
-                  </span>
-                  @endforeach
-                </div>
-              </details>
-              @endif
-              @else
-              <span class="text-muted">Détails non disponibles</span>
-              @endif
-            </td> -->
             <td>
               <span class="audit-route">{{ $log->route ?? 'Action système' }}</span>
               <span class="audit-meta audit-ip">{{ $log->ip_address ?? 'IP inconnue' }}</span>

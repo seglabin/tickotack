@@ -1,3 +1,9 @@
+
+@php 
+  //$caissesAdresses = $caisses->pluck('idadresse', 'id')->toArray();
+//$iddepart = $caissesAdresses[$idcaisse] ?? (($a != null) ? $a->iddepart : '');
+
+@endphp
 <div class="row" id="conteneurForm" data-normal-type-id="{{ $normalTypeId }}" data-expeditions-url="{{ route('conteneur.expeditions-disponibles') }}">
     <input type="hidden" name="expedition_ids_present" value="1">
     @php
@@ -62,7 +68,30 @@
         </div>
     </div>
 
-   
+   <div class="col-md-4">
+        <div class="card-body">
+            <div class="form-group">
+                <label for="iddepart" class="lelabel">Ville de départ (*)</label>
+                @php
+                $iddepart = request('iddepart', old('iddepart', $a?->iddepart));
+                echo chargerCombo($adresses, 'id', 'libelle', 'iddepart', 'Choisir le départ', '', '', $iddepart);
+                @endphp
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card-body">
+            <div class="form-group">
+                <label for="iddestination" class="lelabel">Ville de destination (*)</label>
+                @php
+                $iddestination = request('iddestination', old('iddestination', $a?->iddestination));
+                echo chargerCombo($adresses, 'id', 'libelle', 'iddestination', 'Choisir la destination', '', '', $iddestination);
+                @endphp
+            </div>
+        </div>
+    </div>
+
     <div class="col-md-3">
         <div class="card-body">
             <div class="form-group">
@@ -168,12 +197,15 @@
     const conteneurForm = document.getElementById('conteneurForm');
     const selectTransport = document.getElementById('idmoyentransport');
     const selectTypeEnvoi = document.getElementById('idtypenvoi');
+    const selectiddestination = document.getElementById('iddestination');
+    const selectiddepart = document.getElementById('iddepart');
     const zoneTypeEnvoi = document.getElementById('zoneTypeEnvoi');
     const champPoidsTotal = document.getElementById('poidstotal');
     const listeExpeditions = document.getElementById('expeditionsConteneurListe');
     const selections = new Set();
     const poidsExpeditions = new Map();
     const normalTypeId = conteneurForm.dataset.normalTypeId;
+    let requeteExpeditionsActive = null;
 
     function normaliser(valeur) {
         return valeur.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
@@ -249,19 +281,31 @@
 
     async function actualiserExpeditions() {
         actualiserChamps();
+        if (requeteExpeditionsActive) {
+            requeteExpeditionsActive.abort();
+        }
+        const requeteExpeditions = new AbortController();
+        requeteExpeditionsActive = requeteExpeditions;
         const parametres = new URLSearchParams({
             idenreg: document.querySelector('input[name="idenreg"]')?.value || '',
             idmoyentransport: selectTransport.value,
-            idtypenvoi: selectTypeEnvoi.value
+            idtypenvoi: selectTypeEnvoi.value,
+            iddestination: selectiddestination.value,
+            iddepart: selectiddepart.value
         });
         listeExpeditions.setAttribute('aria-busy', 'true');
         try {
             const response = await fetch(conteneurForm.dataset.expeditionsUrl + '?' + parametres.toString(), {
-                headers: { 'Accept': 'application/json' }
+                headers: { 'Accept': 'application/json' },
+                signal: requeteExpeditions.signal
             });
             if (!response.ok) throw new Error('Impossible de charger les expéditions.');
-            afficherExpeditions(await response.json());
+            const expeditions = await response.json();
+            if (requeteExpeditionsActive === requeteExpeditions) {
+                afficherExpeditions(expeditions);
+            }
         } catch (error) {
+            if (error.name === 'AbortError') return;
             const ligne = document.createElement('tr');
             const cellule = document.createElement('td');
             cellule.colSpan = 7;
@@ -270,13 +314,38 @@
             ligne.appendChild(cellule);
             listeExpeditions.replaceChildren(ligne);
         } finally {
-            listeExpeditions.removeAttribute('aria-busy');
-            actualiserPoidsTotal();
+            if (requeteExpeditionsActive === requeteExpeditions) {
+                listeExpeditions.removeAttribute('aria-busy');
+                actualiserPoidsTotal();
+            }
         }
     }
 
     window.actualiserConteneurTransport = actualiserExpeditions;
     window.actualiserConteneurTypeEnvoi = actualiserExpeditions;
+    function controlerChangementTrajet(event) {
+        const selectModifie = event.currentTarget;
+        if (selectiddepart.value !== '0'
+            && selectiddestination.value !== '0'
+            && selectiddepart.value === selectiddestination.value) {
+            alert('La ville de départ doit être différente de la ville de destination.');
+            window.jQuery(selectModifie).val('0').trigger('change');
+            return;
+        }
+
+        actualiserExpeditions();
+    }
+
+    function lierActualisationTrajet() {
+        window.jQuery(selectiddepart).on('change', controlerChangementTrajet);
+        window.jQuery(selectiddestination).on('change', controlerChangementTrajet);
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', lierActualisationTrajet, { once: true });
+    } else {
+        lierActualisationTrajet();
+    }
 
     listeExpeditions.addEventListener('change', function (event) {
         const checkbox = event.target.closest('input[name="expedition_ids[]"]');

@@ -2142,6 +2142,34 @@ textarea {
 .tgmobile__menu .navigation li > ul > li > ul {
   display: none;
 }
+.tgmobile__menu .tgmenu__navbar-wrap {
+  display: block;
+  flex: 0 0 auto;
+  width: 100%;
+}
+.tgmobile__menu .tgmenu__navbar-wrap > ul.navigation {
+  display: block;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  width: 100%;
+  margin: 0;
+}
+.tgmobile__menu .navigation .sub-menu {
+  position: static;
+  top: auto;
+  right: auto;
+  left: auto;
+  min-width: 0;
+  transform: none;
+  transform-origin: initial;
+  visibility: visible;
+  opacity: 1;
+  transition: none;
+  box-shadow: none;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+}
 .tgmobile__menu .navigation ul {
   padding: 0;
   margin: 0;

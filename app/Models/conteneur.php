@@ -17,6 +17,8 @@ class conteneur extends Model
         'idconsignataire',
         'idtypenvoi',
         'idmoyentransport',
+        'iddepart',
+        'iddestination',
         'datedepart',
         'douane',
         'poidstotal',

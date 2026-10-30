@@ -287,7 +287,8 @@ function tableau_html($t, $liste_entete, $liste_colonne, $btn = "", $num = true,
             if ((strpos($btn, 'retraitransfert') !== false) && ($v->idetat == 1)) {
                 $iddestination = is_array($v) ? ($v['iddestination'] ?? '') : ($v->iddestination ?? '');
                 $idcreateur = is_array($v) ? ($v['iduser'] ?? null) : ($v->iduser ?? null);
-                if ($iduserRole == 1 || ($peutModifier && $iddestination == $idadrescaisseuser && (int) $idcreateur === (int) \Illuminate\Support\Facades\Auth::id())) {
+                // if ($iduserRole == 1 || ($peutModifier && $iddestination == $idadrescaisseuser )) { //&& (int) $idcreateur === (int) \Illuminate\Support\Facades\Auth::id()
+                if ($iduserRole == 1 || ( $iddestination == $idadrescaisseuser )) { //&& (int) $idcreateur === (int) \Illuminate\Support\Facades\Auth::id()
                     $html .= '<input type="hidden" id="dataln' . $i . '" name="dataln' . $i . '" value="' . $dataln . '">';
                     $html .= '<button type="button" class="btn btn-info btn-sm" onclick="ouvrirModalRetrait(\'' . $id . '\');" style="margin:0 2px; padding:6px 10px; font-size:14px;" title="Retrait de transfert"><i class="fa fa-credit-card"></i></button>';
                 }   

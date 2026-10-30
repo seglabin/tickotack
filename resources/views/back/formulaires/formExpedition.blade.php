@@ -10,7 +10,7 @@
     <div class="col-md-2">
         <div class="card-body">
             <div class="form-group">
-                <label for="code" class="lelabel">Code expedition (*)</label>
+                <label for="code" class="lelabel">Code Coli (*)</label>
                 <input type="text" class="form-control" id="code" name="code"
                     onkeyup="enMajuscule('code');"
                     placeholder="Ex : EXP-ABC123"
@@ -22,7 +22,7 @@
     <div class="col-md-3">
         <div class="card-body">
             <div class="form-group">
-                <label for="datenreg" class="lelabel">Date de l'expedition (*)</label>
+                <label for="datenreg" class="lelabel">Date d'enregistrement (*)</label>
                 <input type="datetime-local" class="form-control" id="datenreg" name="datenreg"
                     value="{{ $dateDefaut }}">
             </div>
@@ -57,59 +57,7 @@
 
     <div class="col-md-12" id="zonebateau">
         <div class="row">
-
-            <!-- <div class="col-md-2">
-                <div class="card-body">
-                    <div class="form-group">
-                        <label for="poids" class="lelabel">Longueur (*)</label>
-                        <div class="input-group mb-3">
-                            <input type="text" class="form-control" id="long" name="long"
-                                onkeyup="typenumerique(this);" onchange="calculerPoids(); "
-                                placeholder="Ex : 100 000"
-                                value="{{ ($a != null) ? $a->long : null }}">
-                            <div class="input-group-append">
-                                <span class="input-group-text" id="basic-addon2">Cm</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-2">
-                <div class="card-body">
-                    <div class="form-group">
-                        <label for="poids" class="lelabel">Largeur (*)</label>
-                        <div class="input-group mb-3">
-                            <input type="text" class="form-control" id="larg" name="larg"
-                                onkeyup="typenumerique(this);" onchange="calculerPoids(); "
-                                placeholder="Ex : 100 000"
-                                value="{{ ($a != null) ? $a->larg : null }}">
-                            <div class="input-group-append">
-                                <span class="input-group-text" id="basic-addon2">Cm</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-2">
-                <div class="card-body">
-                    <div class="form-group">
-                        <label for="poids" class="lelabel">Hauteur (*)</label>
-
-                        <div class="input-group mb-3">
-                            <input type="text" class="form-control" id="haut" name="haut"
-                                onkeyup="typenumerique(this);" onchange="calculerPoids(); "
-                                placeholder="Ex : 100 000"
-                                value="{{ ($a != null) ? $a->haut : null }}">
-                            <div class="input-group-append">
-                                <span class="input-group-text" id="basic-addon2">Cm</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div> -->
-
+       
             <div class="col-md-4">
                 <div class="card-body">
                     <div class="form-group">
@@ -150,7 +98,7 @@
             <div class="col-md-2">
                 <div class="card-body">
                     <div class="form-group">
-                        <label for="poids" class="lelabel">Poids (*)</label>
+                        <label for="poids" class="lelabel">Unité de mesure (*)</label>
                         <input type="text" class="form-control" id="poidsA" name="poidsA"
                             onkeyup="typenumerique(this);" onchange="changePoidesA();"
                             placeholder="Ex : 100 000"
@@ -310,8 +258,8 @@
                                 <input type="text" class="form-control" id="modal_tel" name="tel" required onkeyup="typetelephone(this);" placeholder="Ex : 01 02 03 04 05">
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="modal_whatsap" class="lelabel">WhatsApp</label>
-                                <input type="text" class="form-control" id="modal_whatsap" name="whatsap" onkeyup="typetelephone(this);" placeholder="Ex : 01 02 03 04 05">
+                                <label for="modal_whatsap" class="lelabel">WhatsApp (*)</label>
+                                <input type="text" class="form-control" id="modal_whatsap" name="whatsap" required onkeyup="typetelephone(this);" placeholder="Ex : 01 02 03 04 05">
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="modal_idadreslivr" class="lelabel">Adresse de livraison</label>
@@ -413,10 +361,11 @@
         function soumettreNouvelActeur() {
             const nom = $('#modal_nom').val().trim();
             const tel = $('#modal_tel').val().trim();
+            const whatsap = $('#modal_whatsap').val().trim();
             const alertBox = $('#alertModalActeur');
 
-            if (!nom || !tel) {
-                alertBox.text("Veuillez renseigner le nom complet et le numéro de téléphone.");
+            if (!nom || !tel|| !whatsap) {
+                alertBox.text("Veuillez renseigner le nom complet, le numéro de téléphone et le numéro WhatsApp.");
                 alertBox.removeClass('d-none');
                 return;
             }

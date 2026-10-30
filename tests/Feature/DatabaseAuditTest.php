@@ -208,6 +208,21 @@ class DatabaseAuditTest extends TestCase
             'ip_address' => '127.0.0.1',
             'created_at' => now(),
         ]);
+        DB::table('database_audit_logs')->insert([
+            'user_id' => $admin->id,
+            'action' => 'INSERT',
+            'table_name' => 'transferts',
+            'record_id' => '3',
+            'created_at' => now(),
+        ]);
+        DB::table('database_audit_logs')->insert([
+            'user_id' => $admin->id,
+            'action' => 'UPDATE',
+            'table_name' => 'caisses',
+            'record_id' => '7',
+            'changes' => json_encode(['montant' => ['new' => 5000]]),
+            'created_at' => now(),
+        ]);
 
         $this->actingAs($admin)
             ->get(route('admin.historique-actions'))
@@ -215,7 +230,10 @@ class DatabaseAuditTest extends TestCase
             ->assertSee('Journal des actions')
             ->assertSee('Modification')
             ->assertSee('transferts')
-            ->assertSee('125');
+            ->assertSee('125')
+            ->assertSee('Ajout du transfert ID 3')
+            ->assertSee('Modification du montant de caisse à 5000')
+            ->assertSee('Info');
     }
 
     public function test_creator_columns_exist_on_all_requested_tables(): void

@@ -212,8 +212,8 @@
                             <input type="text" class="form-control" id="modal_tel" name="tel" required onkeyup="typetelephone(this);" placeholder="Ex : 01 02 03 04 05">
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="modal_whatsap" class="lelabel">WhatsApp</label>
-                            <input type="text" class="form-control" id="modal_whatsap" name="whatsap" onkeyup="typetelephone(this);" placeholder="Ex : 01 02 03 04 05">
+                            <label for="modal_whatsap" class="lelabel">WhatsApp (*)</label>
+                            <input type="text" class="form-control" id="modal_whatsap" name="whatsap" required onkeyup="typetelephone(this);" placeholder="Ex : 01 02 03 04 05">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="modal_carte" class="lelabel">Photo de la carte</label>
@@ -268,10 +268,11 @@
     function soumettreNouvelActeur() {
         const nom = $('#modal_nom').val().trim();
         const tel = $('#modal_tel').val().trim();
+        const whatsap = $('#modal_whatsap').val().trim();
         const alertBox = $('#alertModalActeur');
 
-        if (!nom || !tel) {
-            alertBox.text("Veuillez renseigner le nom complet et le numéro de téléphone.");
+        if (!nom || !tel || !whatsap) {
+            alertBox.text("Veuillez renseigner le nom complet, le numéro de téléphone et le numéro WhatsApp.");
             alertBox.removeClass('d-none');
             return;
         }
