@@ -289,6 +289,7 @@ class ConteneurController extends Controller
                 $e->iduser = Auth::id();
             }
 
+
             DB::transaction(function () use ($e, $validated) {
                 $ancienExpeditionIds = DB::table('expeditions')
                     ->where('idconteneur', $e->id)
@@ -299,63 +300,65 @@ class ConteneurController extends Controller
                 $e->idmoyentransport = $validated['idmoyentransport'];
                 $e->iddepart = $validated['iddepart'];
                 $e->iddestination = $validated['iddestination'];
-                $e->save();
+              if ( $e->save()){
 
-                $etatEnregistrement = element::where('nomtable', 'etat')
-                    ->whereRaw('LOWER(libelle) = ?', ['enregistrement'])
-                    ->first();
-                if (!$etatEnregistrement) {
-                    $etatEnregistrement = element::create([
-                        'nomtable' => 'etat',
-                        'libelle' => 'Enregistrement',
-                    ]);
-                }
+                  
+                  $etatEnregistrement = element::where('nomtable', 'etat')
+                      ->whereRaw('LOWER(libelle) = ?', ['enregistrement'])
+                      ->first();
+                  if (!$etatEnregistrement) {
+                      $etatEnregistrement = element::create([
+                          'nomtable' => 'etat',
+                          'libelle' => 'Enregistrement',
+                      ]);
+                  }
+  
+                  $selectionDemandee = array_values(array_unique(array_map(
+                      'intval',
+                      $validated['expedition_ids'] ?? []
+                  )));
+                  $expeditionIdsValides = DB::table('expeditions')
+                      ->whereIn('id', $selectionDemandee)
+                      ->where('idmoyentransport', $validated['idmoyentransport'])
+                      ->where('idtypenvoi', $validated['idtypenvoi'])
+                      ->where('iddepart', $validated['iddepart'])
+                      ->where('iddestination', $validated['iddestination'])
+                      ->where(function ($query) use ($etatEnregistrement, $e) {
+                          $query->where('idetat', $etatEnregistrement->id)
+                              ->orWhere('idconteneur', $e->id);
+                      })
+                      ->pluck('id')
+                      ->all();
+  
+                  $expeditionsADetacher = array_diff($ancienExpeditionIds, $expeditionIdsValides);
+                  if ($expeditionsADetacher) {
+                      DB::table('expeditions')
+                          ->whereIn('id', $expeditionsADetacher)
+                          ->update([
+                              'idconteneur' => null,
+                              'idetat' => $etatEnregistrement->id,
+                          ]);
+                  }
+  
+                  if ($expeditionIdsValides) {
+                      $etatRattache = element::firstOrCreate([
+                          'nomtable' => 'etat',
+                          'libelle' => 'Rattaché',
+                      ]);
+  
+                      DB::table('expeditions')
+                          ->whereIn('id', $expeditionIdsValides)
+                          ->update([
+                              'idconteneur' => $e->id,
+                              'idetat' => $etatRattache->id,
+                          ]);
+                  }
+              }
 
-                $selectionDemandee = array_values(array_unique(array_map(
-                    'intval',
-                    $validated['expedition_ids'] ?? []
-                )));
-                $expeditionIdsValides = DB::table('expeditions')
-                    ->whereIn('id', $selectionDemandee)
-                    ->where('idmoyentransport', $validated['idmoyentransport'])
-                    ->where('idtypenvoi', $validated['idtypenvoi'])
-                    ->where('iddepart', $validated['iddepart'])
-                    ->where('iddestination', $validated['iddestination'])
-                    ->where(function ($query) use ($etatEnregistrement, $e) {
-                        $query->where('idetat', $etatEnregistrement->id)
-                            ->orWhere('idconteneur', $e->id);
-                    })
-                    ->pluck('id')
-                    ->all();
-
-                $expeditionsADetacher = array_diff($ancienExpeditionIds, $expeditionIdsValides);
-                if ($expeditionsADetacher) {
-                    DB::table('expeditions')
-                        ->whereIn('id', $expeditionsADetacher)
-                        ->update([
-                            'idconteneur' => null,
-                            'idetat' => $etatEnregistrement->id,
-                        ]);
-                }
-
-                if ($expeditionIdsValides) {
-                    $etatRattache = element::firstOrCreate([
-                        'nomtable' => 'etat',
-                        'libelle' => 'Rattaché',
-                    ]);
-
-                    DB::table('expeditions')
-                        ->whereIn('id', $expeditionIdsValides)
-                        ->update([
-                            'idconteneur' => $e->id,
-                            'idetat' => $etatRattache->id,
-                        ]);
-                }
-
-                $e->poidstotal = DB::table('expeditions')
-                    ->where('idconteneur', $e->id)
-                    ->sum('poids');
-                $e->save();
+                // $e->poidstotal = DB::table('expeditions')
+                //     ->where('idconteneur', $e->id)
+                //     ->sum('poids');
+                // $e->save();
             });
 
             return redirect()->route('conteneur');
