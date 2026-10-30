@@ -4,7 +4,7 @@
 //$iddepart = $caissesAdresses[$idcaisse] ?? (($a != null) ? $a->iddepart : '');
 
 @endphp
-<div class="row" id="conteneurForm" data-normal-type-id="{{ $normalTypeId }}" data-expeditions-url="{{ route('conteneur.expeditions-disponibles') }}">
+<div class="row" id="conteneurForm" data-conteneur-id="{{ $id ?: '' }}" data-normal-type-id="{{ $normalTypeId }}" data-expeditions-url="{{ route('conteneur.expeditions-disponibles') }}">
     <input type="hidden" name="expedition_ids_present" value="1">
     @php
         $dateDepart = $a?->datedepart
@@ -18,7 +18,7 @@
                 <label for="idmoyentransport" class="lelabel">Moyen de transport (*)</label>
                 @php
                     $idmoyentransport = request('idmoyentransport', old('idmoyentransport', $a?->idmoyentransport));
-                    echo chargerCombo($moyentransports, 'id', 'libelle', 'idmoyentransport', 'Choisir un moyen de transport', '', 'actualiserConteneurTransport()', $idmoyentransport);
+                    echo chargerCombo($moyentransports, 'id', 'libelle', 'idmoyentransport', 'Choisir un moyen de transport', '', '', $idmoyentransport);
                 @endphp
             </div>
         </div>
@@ -30,7 +30,7 @@
                 <label for="idtypenvoi" class="lelabel">Type d'envoi (*)</label>
                 @php
                     $idtypenvoi = request('idtypenvoi', old('idtypenvoi', $a?->idtypenvoi));
-                    echo chargerCombo($typenvois, 'id', 'libelle', 'idtypenvoi', 'Choisir un type d\'envoi', '', 'actualiserConteneurTypeEnvoi()', $idtypenvoi);
+                    echo chargerCombo($typenvois, 'id', 'libelle', 'idtypenvoi', 'Choisir un type d\'envoi', '', '', $idtypenvoi);
                 @endphp
             </div>
         </div>
@@ -287,7 +287,7 @@
         const requeteExpeditions = new AbortController();
         requeteExpeditionsActive = requeteExpeditions;
         const parametres = new URLSearchParams({
-            idenreg: document.querySelector('input[name="idenreg"]')?.value || '',
+            idenreg: conteneurForm.dataset.conteneurId,
             idmoyentransport: selectTransport.value,
             idtypenvoi: selectTypeEnvoi.value,
             iddestination: selectiddestination.value,
@@ -321,30 +321,32 @@
         }
     }
 
-    window.actualiserConteneurTransport = actualiserExpeditions;
-    window.actualiserConteneurTypeEnvoi = actualiserExpeditions;
     function controlerChangementTrajet(event) {
-        const selectModifie = event.currentTarget;
+        const selectModifie = window.jQuery(event.currentTarget);
         if (selectiddepart.value !== '0'
             && selectiddestination.value !== '0'
             && selectiddepart.value === selectiddestination.value) {
             alert('La ville de départ doit être différente de la ville de destination.');
-            window.jQuery(selectModifie).val('0').trigger('change');
+            selectModifie.val('0').trigger('change');
             return;
         }
 
         actualiserExpeditions();
     }
 
-    function lierActualisationTrajet() {
-        window.jQuery(selectiddepart).on('change', controlerChangementTrajet);
-        window.jQuery(selectiddestination).on('change', controlerChangementTrajet);
+    function lierEvenementsFiltres() {
+        if (!window.jQuery) {
+            throw new Error('jQuery est nécessaire pour actualiser les expéditions.');
+        }
+
+        window.jQuery([selectTransport, selectTypeEnvoi]).on('change', actualiserExpeditions);
+        window.jQuery([selectiddepart, selectiddestination]).on('change', controlerChangementTrajet);
     }
 
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', lierActualisationTrajet, { once: true });
+        document.addEventListener('DOMContentLoaded', lierEvenementsFiltres, { once: true });
     } else {
-        lierActualisationTrajet();
+        lierEvenementsFiltres();
     }
 
     listeExpeditions.addEventListener('change', function (event) {

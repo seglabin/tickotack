@@ -19,7 +19,7 @@ return new class extends Migration
             $table->foreign('idconteneur')
                 ->references('id')
                 ->on('conteneurs')
-                ->onDelete('set null')
+                ->onDelete('cascade')
                 ->onUpdate('cascade');            
         });
     }

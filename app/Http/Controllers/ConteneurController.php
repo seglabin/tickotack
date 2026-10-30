@@ -75,9 +75,15 @@ class ConteneurController extends Controller
             ->where('e.idconteneur', $id)
             ->orderByDesc('e.datenreg')
             ->get([
-                'e.code', 'e.datenreg', 'exp.nom as expediteur', 'rec.nom as recepteur',
-                'dep.libelle as villedepart', 'dest.libelle as villedestination',
-                'e.nbrcolis', 'e.poids', 'et.libelle as etat',
+                'e.code',
+                'e.datenreg',
+                'exp.nom as expediteur',
+                'rec.nom as recepteur',
+                'dep.libelle as villedepart',
+                'dest.libelle as villedestination',
+                'e.nbrcolis',
+                'e.poids',
+                'et.libelle as etat',
             ]);
 
         return response()->json([
@@ -110,20 +116,28 @@ class ConteneurController extends Controller
         $iddepart = $request->input('iddepart', $lenregistrement?->iddepart);
         $iddestination = $request->input('iddestination', $lenregistrement?->iddestination);
         $transportLabel = element::whereKey($transportId)->value('libelle');
-$adresses = adresse::orderBy('libelle')->get();
+        $adresses = adresse::orderBy('libelle')->get();
         if (str_contains(mb_strtolower((string) $transportLabel), 'bateau')) {
             $typeId = $normalTypeId;
             $request->merge(['idtypenvoi' => $normalTypeId]);
         }
-        
+
         $expeditions = $this->chargerExpeditionsDisponibles($id, $transportId, $typeId, $iddepart, $iddestination);
 
         session(['config' => 'conteneur']);
         session(['module' => 'conteneur']);
 
         return view('back.formulaire', compact(
-            'lenregistrement', 'id', 'titre', 'valider', 'consignataires',
-            'typenvois', 'moyentransports', 'expeditions', 'normalTypeId', 'adresses'
+            'lenregistrement',
+            'id',
+            'titre',
+            'valider',
+            'consignataires',
+            'typenvois',
+            'moyentransports',
+            'expeditions',
+            'normalTypeId',
+            'adresses'
         ));
     }
 
@@ -189,136 +203,165 @@ $adresses = adresse::orderBy('libelle')->get();
     {
         try {
             //code...
-       
-        $transportLabel = element::whereKey($request->input('idmoyentransport'))->value('libelle');
-        $isBateau = str_contains(mb_strtolower((string) $transportLabel), 'bateau');
-        $normalTypeId = element::where('nomtable', 'typenvoi')
-            ->whereRaw('LOWER(libelle) = ?', ['normal'])
-            ->value('id');
-
-        $iddepart = $request->input('iddepart');
-        $iddestination = $request->input('iddestination');
-        if ($request->filled('iddepart')
-            && $request->filled('iddestination')
-            && (string) $iddepart !== '0'
-            && (string) $iddestination !== '0'
-            && (string) $iddepart === (string) $iddestination) {
-            throw \Illuminate\Validation\ValidationException::withMessages([
-                'iddestination' => 'La ville de départ doit être différente de la ville de destination.',
-            ]);
-        }
-
-// dd($request->idconsignataire);
-if($request->idconsignataire==0) $request['idconsignataire'] =null;
-        $validated = $request->validate([
-            'numconteneur' => ['required', 'string', 'max:255'],
-            'typeconteneur' => [$isBateau ? 'required' : 'nullable', 'string', 'max:30'],
-            // 'coutcfa' => ['required', 'numeric', 'min:0'],
-            'lienconteneur' => [$isBateau ? 'required' : 'nullable', 'string', 'max:255'],
-            'idconsignataire' => [$isBateau ? 'required' : 'nullable', 'integer', 'exists:elements,id'],
-            'idtypenvoi' => ['required', 'integer', 'exists:elements,id'],
-            'idmoyentransport' => ['required', 'integer', 'exists:elements,id'],
-            'iddepart' => ['required', 'integer', 'exists:adresses,id'],
-            'iddestination' => ['required', 'integer', 'exists:adresses,id'],
-            'idetat' => ['nullable', 'integer', 'exists:elements,id'],
-            'datedepart' => ['nullable', 'date'],
-            'douane' => ['nullable', 'numeric', 'min:0'],
-            'expedition_ids' => ['nullable', 'array'],
-            'expedition_ids.*' => ['integer', 'exists:expeditions,id'],
-        ]);
-
-        if ($isBateau) {
-            $validated['idtypenvoi'] = $normalTypeId;
-        }
-
-        $id = $request->input('idenreg');
-        $doublon = conteneur::where('numconteneur', $validated['numconteneur'])
-            ->when($id, fn ($query) => $query->where('id', '!=', $id))
-            ->exists();
-
-        if ($doublon) {
-            return view('alertDoublon', [
-                'info' => 'Ce numéro de conteneur existe déjà.',
-                'titre' => 'DOUBLON',
-            ]);
-        }
-
-        $conteneur = DB::transaction(function () use ($id, $validated) {
-            $conteneur = $id
-                ? conteneur::whereKey($id)->lockForUpdate()->firstOrFail()
-                : new conteneur();
-            $criteresModifies = $id && collect([
-                'idmoyentransport',
-                'idtypenvoi',
-                'iddepart',
-                'iddestination',
-            ])->contains(fn ($critere) => (string) $conteneur->$critere !== (string) $validated[$critere]);
-
-            if (!$id) {
-                $conteneur->iduser = Auth::id();
+            $id = $request->input('idenreg');
+            $existing = ($id != 0 && $id != null) ? conteneur::findOrFail($id) : null;
+            if ($existing) {
+                $this->authorizeRecordOwner($existing);
             }
-            $conteneur->fill($validated);
-            $conteneur->idetat = $validated['idetat'] ?? 1;
-            $conteneur->save();
 
-            $etatEnregistrement = element::where('nomtable', 'etat')
-                ->whereRaw('LOWER(libelle) = ?', ['enregistrement'])
-                ->first();
-            if (!$etatEnregistrement) {
-                $etatEnregistrement = element::create([
-                    'nomtable' => 'etat',
-                    'libelle' => 'Enregistrement',
+            $transportLabel = element::whereKey($request->input('idmoyentransport'))->value('libelle');
+            $isBateau = str_contains(mb_strtolower((string) $transportLabel), 'bateau');
+            $normalTypeId = element::where('nomtable', 'typenvoi')
+                ->whereRaw('LOWER(libelle) = ?', ['normal'])
+                ->value('id');
+
+            $iddepart = $request->input('iddepart');
+            $iddestination = $request->input('iddestination');
+            if (
+                $request->filled('iddepart')
+                && $request->filled('iddestination')
+                && (string) $iddepart !== '0'
+                && (string) $iddestination !== '0'
+                && (string) $iddepart === (string) $iddestination
+            ) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'iddestination' => 'La ville de départ doit être différente de la ville de destination.',
                 ]);
             }
 
-            if ($criteresModifies) {
-                DB::table('expeditions')
-                    ->where('idconteneur', $conteneur->id)
-                    ->update([
-                        'idconteneur' => null,
-                        'idetat' => $etatEnregistrement->id,
-                    ]);
+            // dd($request->idconsignataire);
+            if ($request->idconsignataire == 0) $request['idconsignataire'] = null;
+            $validated = $request->validate([
+                'numconteneur' => ['required', 'string', 'max:255'],
+                'typeconteneur' => [$isBateau ? 'required' : 'nullable', 'string', 'max:30'],
+                // 'coutcfa' => ['required', 'numeric', 'min:0'],
+                'lienconteneur' => [$isBateau ? 'required' : 'nullable', 'string', 'max:255'],
+                'idconsignataire' => [$isBateau ? 'required' : 'nullable', 'integer', 'exists:elements,id'],
+                'idtypenvoi' => ['required', 'integer', 'exists:elements,id'],
+                'idmoyentransport' => ['required', 'integer', 'exists:elements,id'],
+                'iddepart' => ['required', 'integer', 'exists:adresses,id'],
+                'iddestination' => ['required', 'integer', 'exists:adresses,id'],
+                'idetat' => ['nullable', 'integer', 'exists:elements,id'],
+                'datedepart' => ['nullable', 'date'],
+                'douane' => ['nullable', 'numeric', 'min:0'],
+                'expedition_ids' => ['nullable', 'array'],
+                'expedition_ids.*' => ['integer', 'exists:expeditions,id'],
+            ]);
+
+            if ($isBateau) {
+                $validated['idtypenvoi'] = $normalTypeId;
             }
 
-            $expeditionIds = DB::table('expeditions')
-                ->whereIn('id', $validated['expedition_ids'] ?? [])
-                ->where('idmoyentransport', $validated['idmoyentransport'])
-                ->where('idtypenvoi', $validated['idtypenvoi'])
-                ->where('iddepart', $validated['iddepart'])
-                ->where('iddestination', $validated['iddestination'])
-                ->where(function ($query) use ($etatEnregistrement, $conteneur) {
-                    $query->where('idetat', $etatEnregistrement->id)
-                        ->orWhere('idconteneur', $conteneur->id);
-                })
-                ->pluck('id');
 
-            $expeditionsSelectionnees = DB::table('expeditions')
-                ->whereIn('id', $expeditionIds)
-                ->get(['poids']);
-            $conteneur->poidstotal = $expeditionsSelectionnees->sum('poids');
-            $conteneur->save();
+            $doublon = conteneur::where('numconteneur', $validated['numconteneur'])
+                ->when($id, fn($query) => $query->where('id', '!=', $id))
+                ->exists();
 
-            if ($conteneur->id && $expeditionIds->isNotEmpty()) {
-                $etatEnvoye = element::firstOrCreate([
-                    'nomtable' => 'etat',
-                    'libelle' => 'Envoyé',
+            if ($doublon) {
+                return view('alertDoublon', [
+                    'info' => 'Ce numéro de conteneur existe déjà.',
+                    'titre' => 'DOUBLON',
                 ]);
-
-                DB::table('expeditions')
-                    ->whereIn('id', $expeditionIds)
-                    ->update([
-                        'idconteneur' => $conteneur->id,
-                        'idetat' => $etatEnvoye->id,
-                    ]);
             }
 
-            return $conteneur;
-        });
+            if ($id == 0 || $id == null) {
+                $e = new conteneur();
+            } else {
+                $e = $existing;
+            }
 
-        return redirect()->route('conteneur');
-         } catch (\Illuminate\Validation\ValidationException $e) {
+            $e->numconteneur = $request->numconteneur;
+            $e->idtypenvoi = $request->idtypenvoi;
+            $e->idmoyentransport = $request->idmoyentransport;
+            $e->iddepart = $request->iddepart;
+            $e->iddestination = $request->iddestination;
+            $e->idetat = $request->idetat ?? 1;
+            $e->datedepart = $request->datedepart;
+            $e->poidstotal = $request->poidstotal;
+
+            if ($request->typeconteneur !== null) $e->typeconteneur = $request->typeconteneur;
+            if ($request->coutcfa !== null) $e->coutcfa = $request->coutcfa;
+            if ($request->lienconteneur !== null) $e->lienconteneur = $request->lienconteneur;
+            if ($request->idconsignataire !== null) $e->idconsignataire = $request->idconsignataire;
+            if ($request->douane !== null) $e->douane = $request->douane;
+
+            if ($id == 0 || $id == null) {
+                $e->iduser = Auth::id();
+            }
+
+            DB::transaction(function () use ($e, $validated) {
+                $ancienExpeditionIds = DB::table('expeditions')
+                    ->where('idconteneur', $e->id)
+                    ->pluck('id')
+                    ->all();
+
+                $e->idtypenvoi = $validated['idtypenvoi'];
+                $e->idmoyentransport = $validated['idmoyentransport'];
+                $e->iddepart = $validated['iddepart'];
+                $e->iddestination = $validated['iddestination'];
+                $e->save();
+
+                $etatEnregistrement = element::where('nomtable', 'etat')
+                    ->whereRaw('LOWER(libelle) = ?', ['enregistrement'])
+                    ->first();
+                if (!$etatEnregistrement) {
+                    $etatEnregistrement = element::create([
+                        'nomtable' => 'etat',
+                        'libelle' => 'Enregistrement',
+                    ]);
+                }
+
+                $selectionDemandee = array_values(array_unique(array_map(
+                    'intval',
+                    $validated['expedition_ids'] ?? []
+                )));
+                $expeditionIdsValides = DB::table('expeditions')
+                    ->whereIn('id', $selectionDemandee)
+                    ->where('idmoyentransport', $validated['idmoyentransport'])
+                    ->where('idtypenvoi', $validated['idtypenvoi'])
+                    ->where('iddepart', $validated['iddepart'])
+                    ->where('iddestination', $validated['iddestination'])
+                    ->where(function ($query) use ($etatEnregistrement, $e) {
+                        $query->where('idetat', $etatEnregistrement->id)
+                            ->orWhere('idconteneur', $e->id);
+                    })
+                    ->pluck('id')
+                    ->all();
+
+                $expeditionsADetacher = array_diff($ancienExpeditionIds, $expeditionIdsValides);
+                if ($expeditionsADetacher) {
+                    DB::table('expeditions')
+                        ->whereIn('id', $expeditionsADetacher)
+                        ->update([
+                            'idconteneur' => null,
+                            'idetat' => $etatEnregistrement->id,
+                        ]);
+                }
+
+                if ($expeditionIdsValides) {
+                    $etatRattache = element::firstOrCreate([
+                        'nomtable' => 'etat',
+                        'libelle' => 'Rattaché',
+                    ]);
+
+                    DB::table('expeditions')
+                        ->whereIn('id', $expeditionIdsValides)
+                        ->update([
+                            'idconteneur' => $e->id,
+                            'idetat' => $etatRattache->id,
+                        ]);
+                }
+
+                $e->poidstotal = DB::table('expeditions')
+                    ->where('idconteneur', $e->id)
+                    ->sum('poids');
+                $e->save();
+            });
+
+            return redirect()->route('conteneur');
+        } catch (\Illuminate\Validation\ValidationException $e) {
             throw $e;
-         } catch (\Exception $e) {
+        } catch (\Exception $e) {
             dd($e);
             return redirect()->route('conteneur')->with('error', 'Erreur d\'enregistrement : ' . $e->getMessage());
         }
