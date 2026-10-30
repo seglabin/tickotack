@@ -289,18 +289,18 @@ class ConteneurController extends Controller
                 $e->iduser = Auth::id();
             }
 
+            
+                            $e->idtypenvoi = $validated['idtypenvoi'];
+                            $e->idmoyentransport = $validated['idmoyentransport'];
+                            $e->iddepart = $validated['iddepart'];
+                            $e->iddestination = $validated['iddestination'];
+                          if ( $e->save()){
 
             DB::transaction(function () use ($e, $validated) {
                 $ancienExpeditionIds = DB::table('expeditions')
                     ->where('idconteneur', $e->id)
                     ->pluck('id')
                     ->all();
-
-                $e->idtypenvoi = $validated['idtypenvoi'];
-                $e->idmoyentransport = $validated['idmoyentransport'];
-                $e->iddepart = $validated['iddepart'];
-                $e->iddestination = $validated['iddestination'];
-              if ( $e->save()){
 
                   
                   $etatEnregistrement = element::where('nomtable', 'etat')
@@ -353,13 +353,13 @@ class ConteneurController extends Controller
                               'idetat' => $etatRattache->id,
                           ]);
                   }
-              }
-
-                // $e->poidstotal = DB::table('expeditions')
-                //     ->where('idconteneur', $e->id)
-                //     ->sum('poids');
-                // $e->save();
-            });
+                  
+                  // $e->poidstotal = DB::table('expeditions')
+                  //     ->where('idconteneur', $e->id)
+                  //     ->sum('poids');
+                  // $e->save();
+                  });
+                  }
 
             return redirect()->route('conteneur');
         } catch (\Illuminate\Validation\ValidationException $e) {
