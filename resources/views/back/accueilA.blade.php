@@ -143,6 +143,7 @@
     .dashboard-admin__legend-dot { width: 9px; height: 9px; border-radius: 50%; }
     .dashboard-admin__legend-dot--expedition { background: #2563eb; }
     .dashboard-admin__legend-dot--transfer { background: #c47a55; }
+    .dashboard-admin__legend-dot--recipe { background: #24a477; }
     .dashboard-admin__chart-note { margin-left: auto; color: #98a2b2; }
     .dashboard-admin__cashbox { padding: 16px 0; border-top: 1px solid #f0f2f6; }
     .dashboard-admin__cashbox:first-of-type { border-top: 0; }
@@ -154,6 +155,7 @@
     .dashboard-admin__bar { height: 100%; min-width: 0; border-radius: inherit; transition: width .3s ease; }
     .dashboard-admin__bar--expedition { background: linear-gradient(90deg, #60a5fa, #2563eb); }
     .dashboard-admin__bar--transfer { background: linear-gradient(90deg, #e8b99b, #c47a55); }
+    .dashboard-admin__bar--recipe { background: linear-gradient(90deg, #68c99e, #24a477); }
     .dashboard-admin__bar-value { color: #45546b; font-size: 11px; font-weight: 700; text-align: right; white-space: nowrap; }
     .dashboard-admin__activity-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 18px; }
     .dashboard-admin__activity-panel { min-width: 0; }
@@ -185,6 +187,7 @@
             <p>La vue d’ensemble de votre activité, réunie au même endroit.</p>
         </div>
         <div class="dashboard-admin__hero-actions">
+            <a class="dashboard-admin__button" href="{{ url('recette') }}"><i class="fas fa-coins"></i> Recettes</a>
             <a class="dashboard-admin__button" href="{{ url('expedition') }}"><i class="fas fa-box"></i> Expéditions</a>
             <a class="dashboard-admin__button" href="{{ route('utilisateur') }}"><i class="fas fa-user-cog"></i> Utilisateurs</a>
         </div>
@@ -204,6 +207,10 @@
             <div><p class="dashboard-admin__stat-label">Transferts aujourd’hui</p><p class="dashboard-admin__stat-value">{{ number_format($dashboardStats['transfers'], 0, ',', ' ') }}</p></div>
         </article>
         <article class="dashboard-admin__stat">
+            <span class="dashboard-admin__stat-icon dashboard-admin__stat-icon--teal"><i class="fas fa-coins"></i></span>
+            <div><p class="dashboard-admin__stat-label">Recettes aujourd’hui</p><p class="dashboard-admin__stat-value">{{ number_format($dashboardStats['recipes'], 0, ',', ' ') }}</p></div>
+        </article>
+        <article class="dashboard-admin__stat">
             <span class="dashboard-admin__stat-icon dashboard-admin__stat-icon--amber"><i class="fas fa-cash-register"></i></span>
             <div><p class="dashboard-admin__stat-label">Caisses configurées</p><p class="dashboard-admin__stat-value">{{ number_format($dashboardStats['cashboxes'], 0, ',', ' ') }}</p></div>
         </article>
@@ -221,7 +228,7 @@
         <div class="dashboard-admin__panel-head">
             <div>
                 <h2 id="dashboard-payment-title">Paiements par caisse</h2>
-                <p>Comparaison des montants encaissés pour les expéditions et les transferts.</p>
+                <p>Montants encaissés pour les expéditions, transferts et recettes par caisse.</p>
             </div>
             <a class="dashboard-admin__link" href="{{ url('caisse') }}">Gérer les caisses <i class="fas fa-arrow-right"></i></a>
         </div>
@@ -229,13 +236,15 @@
             <div class="dashboard-admin__chart-legend">
                 <span class="dashboard-admin__legend-item"><span class="dashboard-admin__legend-dot dashboard-admin__legend-dot--expedition"></span>Expéditions payées</span>
                 <span class="dashboard-admin__legend-item"><span class="dashboard-admin__legend-dot dashboard-admin__legend-dot--transfer"></span>Transferts payés</span>
+                <span class="dashboard-admin__legend-item"><span class="dashboard-admin__legend-dot dashboard-admin__legend-dot--recipe"></span>Recettes</span>
                 <span class="dashboard-admin__chart-note">Échelle relative à chaque caisse · devise indiquée par caisse</span>
             </div>
             @forelse($cashboxPaymentComparison as $cashbox)
                 @php
-                    $maxPaid = max((float) $cashbox->expeditions_payees, (float) $cashbox->transferts_payes);
+                    $maxPaid = max((float) $cashbox->expeditions_payees, (float) $cashbox->transferts_payes, (float) $cashbox->recettes);
                     $expeditionWidth = $maxPaid > 0 ? ((float) $cashbox->expeditions_payees / $maxPaid) * 100 : 0;
                     $transferWidth = $maxPaid > 0 ? ((float) $cashbox->transferts_payes / $maxPaid) * 100 : 0;
+                    $recipeWidth = $maxPaid > 0 ? ((float) $cashbox->recettes / $maxPaid) * 100 : 0;
                 @endphp
                 <div class="dashboard-admin__cashbox">
                     <div class="dashboard-admin__cashbox-title">
@@ -255,6 +264,13 @@
                             <div class="dashboard-admin__bar dashboard-admin__bar--transfer" style="width: {{ $transferWidth }}%"></div>
                         </div>
                         <span class="dashboard-admin__bar-value">{{ number_format((float) $cashbox->transferts_payes, 2, ',', ' ') }} {{ $cashbox->devise }}</span>
+                    </div>
+                    <div class="dashboard-admin__bar-row">
+                        <span class="dashboard-admin__bar-label">Recettes</span>
+                        <div class="dashboard-admin__bar-track" role="img" aria-label="Montant des recettes enregistrées">
+                            <div class="dashboard-admin__bar dashboard-admin__bar--recipe" style="width: {{ $recipeWidth }}%"></div>
+                        </div>
+                        <span class="dashboard-admin__bar-value">{{ number_format((float) $cashbox->recettes, 2, ',', ' ') }} {{ $cashbox->devise }}</span>
                     </div>
                 </div>
             @empty
@@ -292,6 +308,37 @@
             </div>
         @else
             <div class="dashboard-admin__empty">Aucun approvisionnement de caisse n’a encore été enregistré.</div>
+        @endif
+    </section>
+
+    <section class="dashboard-admin__panel dashboard-admin__advances" aria-labelledby="dashboard-recipes-title">
+        <div class="dashboard-admin__panel-head">
+            <div>
+                <h2 id="dashboard-recipes-title">Recettes récentes</h2>
+                <p>Les cinq dernières recettes enregistrées.</p>
+            </div>
+            <a class="dashboard-admin__link" href="{{ url('recette') }}">Tout voir <i class="fas fa-arrow-right"></i></a>
+        </div>
+        @if($recentRecipes->isNotEmpty())
+            <div class="dashboard-admin__table-wrap">
+                <table class="dashboard-admin__table">
+                    <thead>
+                        <tr><th>Date</th><th>Libellé</th><th>Caisse</th><th>Montant</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach($recentRecipes as $recipe)
+                            <tr>
+                                <td>{{ \Carbon\Carbon::parse($recipe->daterecette)->format('d/m/Y H:i') }}</td>
+                                <td><span class="dashboard-admin__table-code">{{ $recipe->libelle }}</span></td>
+                                <td>{{ $recipe->caisse ?: '—' }}</td>
+                                <td>{{ number_format((float) $recipe->montantrecette, 2, ',', ' ') }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @else
+            <div class="dashboard-admin__empty">Aucune recette n’a encore été enregistrée.</div>
         @endif
     </section>
 

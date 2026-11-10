@@ -285,7 +285,7 @@ public function recuTransfert(Request $request, $id){
             $fichier = $letitre . '.pdf';
 
             $frmat = 'A4';
-            $pag = in_array($config, array('moyenne-periode-apprenant')) ? 'landscape' : 'portrait';
+            $pag = 'landscape';
 
             $pdf = PDF::loadView('back.transfert-recu', compact(
                 'transfert', 'module'              

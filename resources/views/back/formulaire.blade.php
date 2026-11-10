@@ -68,6 +68,10 @@ $a = ($lenregistrement) ? $lenregistrement : null;
                 @include('back.formulaires.formDepense')
                 @break  
 
+                @case('recette')
+                @include('back.formulaires.formRecette')
+                @break
+
                 @case('tauxtransfert')
                 @include('back.formulaires.formTauxtransfert')
                 @break  

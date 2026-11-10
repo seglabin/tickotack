@@ -76,6 +76,7 @@ class ExpeditionController extends Controller
                        END AS maj,
                        exp.nom as expediteur,
                        rec.nom as recepteur,
+                       rec.tel as numrecepteur,
                        dem.nom as demarcheur,
                        dep.libelle as villedepart,
                        dest.libelle as villedestination,
@@ -106,8 +107,8 @@ class ExpeditionController extends Controller
             $adresses = adresse::orderBy('libelle')->get();
 
             $nouv = $listeRetraits ? null : '/ajout-expedition';
-            $entete = 'Date|Code|Trajet|Montant|Statut|Conteneur';
-            $cols = 'datenreg|code|trajet|montant|etat|conteneur';
+            $entete = 'Expéditeur|Récepteur|N° Récepteur|Trajet|Statut|Conteneur';
+            $cols = 'expediteur|recepteur|numrecepteur|trajet|etat|conteneur';
             // $entete = 'Date|Code|Expéditeur|Trajet|Montant|Poids|Statut|Conteneur';
             // $cols = 'datenreg|code|expediteur|trajet|montant|poids|etat|conteneur';
             $btn = $listeRetraits ? 'historique|historique-paiement|retraitcolis' : 'modifier|historique|supprimer|paymentcolis|historique-paiement';

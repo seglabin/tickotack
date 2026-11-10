@@ -4,7 +4,7 @@
 //$iddepart = $caissesAdresses[$idcaisse] ?? (($a != null) ? $a->iddepart : '');
 
 @endphp
-<div class="row" id="conteneurForm" data-conteneur-id="{{ $id ?: '' }}" data-normal-type-id="{{ $normalTypeId }}" data-expeditions-url="{{ route('conteneur.expeditions-disponibles') }}">
+<div class="row" id="conteneurForm" data-conteneur-id="{{ $id ?: '' }}" data-normal-type-id="{{ $normalTypeId }}" data-expeditions-url="{{ route('conteneur.expeditions-disponibles') }}" data-numero-url="{{ route('conteneur.numero-suggere') }}">
     <input type="hidden" name="expedition_ids_present" value="1">
     @php
         $dateDepart = $a?->datedepart
@@ -40,8 +40,9 @@
         <div class="card-body">
             <div class="form-group">
                 <label for="numconteneur" class="lelabel">Référence (*)</label>
-                <input type="text" class="form-control" id="numconteneur" name="numconteneur" onkeyup="this.value = this.value.toUpperCase();"
-                    value="{{ request('numconteneur', old('numconteneur', $a?->numconteneur)) }}" maxlength="100" required>
+                <input type="text" class="form-control" id="numconteneur" name="numconteneur"
+                    value="{{ request('numconteneur', old('numconteneur', $a?->numconteneur)) }}" maxlength="100" readonly required>
+                <small class="form-text text-muted" id="numconteneurAide">Généré selon le type d’envoi, le transport et le mois de départ.</small>
             </div>
         </div>
     </div>
@@ -201,11 +202,14 @@
     const selectiddepart = document.getElementById('iddepart');
     const zoneTypeEnvoi = document.getElementById('zoneTypeEnvoi');
     const champPoidsTotal = document.getElementById('poidstotal');
+    const champNumeroConteneur = document.getElementById('numconteneur');
+    const aideNumeroConteneur = document.getElementById('numconteneurAide');
     const listeExpeditions = document.getElementById('expeditionsConteneurListe');
     const selections = new Set();
     const poidsExpeditions = new Map();
     const normalTypeId = conteneurForm.dataset.normalTypeId;
     let requeteExpeditionsActive = null;
+    let requeteNumeroActive = null;
 
     function normaliser(valeur) {
         return valeur.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
@@ -236,6 +240,51 @@
             return somme + (poidsExpeditions.get(id) || 0);
         }, 0);
         champPoidsTotal.value = total.toFixed(2);
+    }
+
+    async function actualiserNumeroConteneur() {
+        if (requeteNumeroActive) {
+            requeteNumeroActive.abort();
+            requeteNumeroActive = null;
+        }
+
+        if (!selectTransport.value || selectTransport.value === '0'
+            || !selectTypeEnvoi.value || selectTypeEnvoi.value === '0') {
+            champNumeroConteneur.value = '';
+            return;
+        }
+
+        const requeteNumero = new AbortController();
+        requeteNumeroActive = requeteNumero;
+        const parametres = new URLSearchParams({
+            idmoyentransport: selectTransport.value,
+            idtypenvoi: selectTypeEnvoi.value,
+            datedepart: document.getElementById('datedepart').value || new Date().toISOString().slice(0, 16),
+            idenreg: conteneurForm.dataset.conteneurId
+        });
+
+        try {
+            const response = await fetch(conteneurForm.dataset.numeroUrl + '?' + parametres.toString(), {
+                headers: { 'Accept': 'application/json' },
+                signal: requeteNumero.signal
+            });
+            if (!response.ok) throw new Error('Impossible de générer le numéro du conteneur.');
+            const donnees = await response.json();
+            if (requeteNumeroActive === requeteNumero) {
+                champNumeroConteneur.value = donnees.numconteneur;
+                aideNumeroConteneur.textContent = 'Numéro généré automatiquement.';
+                aideNumeroConteneur.classList.remove('text-danger');
+            }
+        } catch (error) {
+            if (error.name === 'AbortError') return;
+            champNumeroConteneur.value = '';
+            aideNumeroConteneur.textContent = error.message;
+            aideNumeroConteneur.classList.add('text-danger');
+        } finally {
+            if (requeteNumeroActive === requeteNumero) {
+                requeteNumeroActive = null;
+            }
+        }
     }
 
     function afficherExpeditions(expeditions) {
@@ -339,7 +388,16 @@
             throw new Error('jQuery est nécessaire pour actualiser les expéditions.');
         }
 
-        window.jQuery([selectTransport, selectTypeEnvoi]).on('change', actualiserExpeditions);
+        window.jQuery(selectTransport).on('change', function () {
+            actualiserChamps();
+            actualiserExpeditions();
+            actualiserNumeroConteneur();
+        });
+        window.jQuery(selectTypeEnvoi).on('change', function () {
+            actualiserExpeditions();
+            actualiserNumeroConteneur();
+        });
+        window.jQuery('#datedepart').on('change', actualiserNumeroConteneur);
         window.jQuery([selectiddepart, selectiddestination]).on('change', controlerChangementTrajet);
     }
 
@@ -365,5 +423,6 @@
     });
     actualiserChamps();
     actualiserPoidsTotal();
+    actualiserNumeroConteneur();
 })();
 </script>

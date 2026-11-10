@@ -5,12 +5,57 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Carbon;
 use App\Models\conteneur;
 use App\Models\element;
 use App\Models\adresse;
 
 class ConteneurController extends Controller
 {
+    public function numeroSuggere(Request $request)
+    {
+        $validated = $request->validate([
+            'idmoyentransport' => ['required', 'integer', 'exists:elements,id'],
+            'idtypenvoi' => ['required', 'integer', 'exists:elements,id'],
+            'datedepart' => ['required', 'date'],
+            'idenreg' => ['nullable', 'integer', 'exists:conteneurs,id'],
+        ]);
+
+        return response()->json([
+            'numconteneur' => $this->genererNumeroConteneur(
+                $validated['idtypenvoi'],
+                $validated['idmoyentransport'],
+                $validated['datedepart'],
+                $validated['idenreg'] ?? null
+            ),
+        ]);
+    }
+
+    private function genererNumeroConteneur(int $typeId, int $transportId, string $date, ?int $ignoreId = null): string
+    {
+        $type = element::where('nomtable', 'typenvoi')->findOrFail($typeId);
+        $transport = element::where('nomtable', 'moyentransport')->findOrFail($transportId);
+        $dateDepart = Carbon::parse($date);
+        $nombreConteneurs = conteneur::where('idtypenvoi', $typeId)
+            ->where('idmoyentransport', $transportId)
+            ->whereYear('datedepart', $dateDepart->year)
+            ->whereMonth('datedepart', $dateDepart->month)
+            ->when($ignoreId, fn ($query) => $query->where('id', '!=', $ignoreId))
+            ->count();
+
+        $typePrefix = mb_strtoupper(mb_substr(trim($type->libelle), 0, 3));
+        $transportPrefix = mb_strtoupper(mb_substr(trim($transport->libelle), 0, 1));
+
+        return sprintf(
+            '%s-%s/%s%s%02d',
+            $typePrefix,
+            $dateDepart->format('y'),
+            $dateDepart->format('m'),
+            $transportPrefix,
+            $nombreConteneurs + 1
+        );
+    }
+
     public function index(Request $request)
     {
         try {
@@ -232,7 +277,6 @@ class ConteneurController extends Controller
             // dd($request->idconsignataire);
             if ($request->idconsignataire == 0) $request['idconsignataire'] = null;
             $validated = $request->validate([
-                'numconteneur' => ['required', 'string', 'max:255'],
                 'typeconteneur' => [$isBateau ? 'required' : 'nullable', 'string', 'max:30'],
                 // 'coutcfa' => ['required', 'numeric', 'min:0'],
                 'lienconteneur' => [$isBateau ? 'required' : 'nullable', 'string', 'max:255'],
@@ -252,6 +296,12 @@ class ConteneurController extends Controller
                 $validated['idtypenvoi'] = $normalTypeId;
             }
 
+            $validated['numconteneur'] = $this->genererNumeroConteneur(
+                (int) $validated['idtypenvoi'],
+                (int) $validated['idmoyentransport'],
+                $validated['datedepart'] ?? now()->toDateTimeString(),
+                $existing?->id
+            );
 
             $doublon = conteneur::where('numconteneur', $validated['numconteneur'])
                 ->when($id, fn($query) => $query->where('id', '!=', $id))
@@ -271,7 +321,7 @@ class ConteneurController extends Controller
             }
             // dd($request->expedition_ids);
 
-            $e->numconteneur = $request->numconteneur;
+            $e->numconteneur = $validated['numconteneur'];
             $e->idtypenvoi = $request->idtypenvoi;
             $e->idmoyentransport = $request->idmoyentransport;
             $e->iddepart = $request->iddepart;

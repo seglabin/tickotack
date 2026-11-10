@@ -25,11 +25,17 @@ class DashboardTest extends TestCase
             ->assertSee('Expéditions récentes')
             ->assertSee('Transferts récents')
             ->assertSee('Approvisionnements de caisse')
+            ->assertSee('Recettes récentes')
+            ->assertSee('Recettes aujourd’hui')
             ->assertViewHas('dashboardStats', fn (array $stats) => $stats['users'] === 1
+                && $stats['recipes'] === 1
                 && $stats['pendingShipments'] === 1
                 && $stats['pendingTransfers'] === 1)
             ->assertViewHas('cashboxPaymentComparison', fn ($comparison) => (float) $comparison->first()->expeditions_payees === 25.0
-                && (float) $comparison->first()->transferts_payes === 20.0)
+                && (float) $comparison->first()->transferts_payes === 20.0
+                && (float) $comparison->first()->recettes === 75.0)
+            ->assertViewHas('recentRecipes', fn ($recipes) => $recipes->count() === 1
+                && (float) $recipes->first()->montantrecette === 75.0)
             ->assertViewHas('recentTransfers', fn ($transfers) => $transfers->first()->code === 'TRANS-TEST')
             ->assertViewHas('recentCashAdvances', fn ($advances) => $advances->count() === 1
                 && (float) $advances->first()->montant === 500.0);
@@ -191,6 +197,14 @@ class DashboardTest extends TestCase
             'montant' => 20,
             'idsrce' => $transferId,
             'libsrce' => 'transferts',
+            'idcaisse' => $cashboxId,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+        DB::table('recettes')->insert([
+            'daterecette' => $now,
+            'libelle' => 'Vente de test',
+            'montantrecette' => 75,
             'idcaisse' => $cashboxId,
             'created_at' => $now,
             'updated_at' => $now,

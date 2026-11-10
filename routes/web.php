@@ -163,8 +163,16 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/enregistrer-depense', 'App\Http\Controllers\DepenseController@enregistrer');
     Route::get('/supprimer-depense/{id}', 'App\Http\Controllers\DepenseController@supprimer');
 
+    //-------------------recette----------------
+    Route::get('/recette', 'App\Http\Controllers\RecetteController@index')->name('recette');
+    Route::get('/ajout-recette', 'App\Http\Controllers\RecetteController@form');
+    Route::get('/modifier-recette/{id}', 'App\Http\Controllers\RecetteController@formModif');
+    Route::post('/enregistrer-recette', 'App\Http\Controllers\RecetteController@enregistrer');
+    Route::get('/supprimer-recette/{id}', 'App\Http\Controllers\RecetteController@supprimer');
+
     //-------------------conteneur----------------
     Route::get('/conteneur', 'App\Http\Controllers\ConteneurController@index')->name('conteneur');
+    Route::get('/conteneur/numero-suggere', 'App\Http\Controllers\ConteneurController@numeroSuggere')->name('conteneur.numero-suggere');
     Route::get('/conteneur/expeditions-disponibles', 'App\Http\Controllers\ConteneurController@expeditionsDisponibles')->name('conteneur.expeditions-disponibles');
     Route::get('/conteneur/{id}/expeditions', 'App\Http\Controllers\ConteneurController@expeditions')->name('conteneur.expeditions');
     Route::get('/ajout-conteneur', 'App\Http\Controllers\ConteneurController@form');

@@ -283,6 +283,9 @@ function tableau_html($t, $liste_entete, $liste_colonne, $btn = "", $num = true,
             $peutModifier = $valeurPeutModifier !== null
                 ? (string) $valeurPeutModifier === '1'
                 : ($maj == '1' || $maj == '');
+            $datePaiementTransfert = is_array($v) ? ($v['datepayement'] ?? null) : ($v->datepayement ?? null);
+            $peutModifierTransfert = $peutModifier
+                && ($config !== 'transfert' || empty($datePaiementTransfert));
 
             if ((strpos($btn, 'retraitransfert') !== false) && ($v->idetat == 1)) {
                 $iddestination = is_array($v) ? ($v['iddestination'] ?? '') : ($v->iddestination ?? '');
@@ -370,13 +373,13 @@ function tableau_html($t, $liste_entete, $liste_colonne, $btn = "", $num = true,
                     }
                 }
             }
-            if ((strpos($btn, 'modifier') !== false) && $peutModifier) {
+            if ((strpos($btn, 'modifier') !== false) && $peutModifierTransfert) {
                 $urlModifier = htmlspecialchars(url($cfmodif . '/' . $id), ENT_QUOTES, 'UTF-8');
                 $html .= $config === 'expedition'
                     ? '<a href="' . $urlModifier . '" class="dropdown-item"><i class="fa fa-edit me-2"></i>Modifier</a>'
                     : '<a href="' . $urlModifier . '" class="btn btn-warning btn-sm" style="margin:0 2px; padding:6px 10px; font-size:14px;" title="Modifier"><i class="fa fa-edit"></i></a>';
             }
-            if ((strpos($btn, 'supprimer') !== false) && $peutModifier) {
+            if ((strpos($btn, 'supprimer') !== false) && $peutModifierTransfert) {
                 if ($config === 'utilisateur') {
                     $urlSupprimer = htmlspecialchars(route('utilisateur.supprimer', ['id' => $id]), ENT_QUOTES, 'UTF-8');
                     $html .= '<a href="' . $urlSupprimer . '" class="btn btn-danger btn-sm" onclick="return confirm(\'Voulez-vous vraiment supprimer cet utilisateur ?\');" style="margin:0 2px; padding:6px 10px; font-size:14px;" title="Supprimer"><i class="fa fa-trash"></i></a>';

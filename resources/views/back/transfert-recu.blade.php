@@ -1,290 +1,147 @@
 <!doctype html>
 <html lang="fr">
-
 <head>
     <meta charset="utf-8">
     <title>Reçu {{ $transfert->code }}</title>
     <style>
-        @page {
-            size: A5;
-            margin: 10mm;
-        }
-
-        * {
-            box-sizing: border-box;
-        }
-
-        body {
-            margin: 0;
-            color: #17202a;
-            font-family: Arial, sans-serif;
-            font-size: 11px;
-        }
-
-        .toolbar {
-            padding: 10px 0;
-            text-align: center;
-        }
-
-        .logoentete {
-            width: 100%;
-            height: auto;
-        }
-
-        .carteacteur {
-            width: 40%;
-            height: auto;
-        }
-
-        .toolbar button {
-            background: #1f6feb;
-            border: 0;
-            border-radius: 4px;
-            color: #fff;
-            cursor: pointer;
-            padding: 8px 18px;
-        }
-
+        @page { size: A4 landscape; margin: 8mm; }
+        * { box-sizing: border-box; }
+        body { color: #17202a; font-family: Arial, sans-serif; font-size: 10px; margin: 0; }
+        .receipt-sheet { border-collapse: separate; border-spacing: 0; page-break-inside: avoid; table-layout: fixed; width: 100%; }
         .receipt {
             border: 1px solid #263746;
-            height: 132mm;
-            margin-bottom: 6mm;
-            padding: 8mm;
+            height: 180mm;
+            padding: 6mm;
+            page-break-inside: avoid;
             position: relative;
+            vertical-align: top;
+            width: 50%;
         }
-
-        .receipt:last-child {
-            margin-bottom: 0;
-        }
-
-        .header {
-            border-bottom: 2px solid #263746;
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 5mm;
-            padding-bottom: 3mm;
-        }
-
-        .brand {
-            font-size: 17px;
-            font-weight: bold;
-        }
-
-        .copy {
-            color: #52616b;
-            font-size: 10px;
-            text-transform: uppercase;
-        }
-
-        h1 {
-            font-size: 16px;
-            margin: 0 0 4mm;
-            text-align: center;
-            text-transform: uppercase;
-        }
-
-        .code {
-            font-size: 13px;
-            font-weight: bold;
-            text-align: center;
-        }
-
-        .grid {
-            display: grid;
-            gap: 3mm 7mm;
-            grid-template-columns: 1fr 1fr;
-            margin-top: 5mm;
-        }
-
-        .field {
-            border-bottom: 1px solid #bdc3c7;
-            min-height: 10mm;
-            padding-bottom: 1mm;
-        }
-
-        .label {
-            color: #52616b;
-            display: block;
-            font-size: 9px;
-            margin-bottom: 1mm;
-            text-transform: uppercase;
-        }
-
-        .value {
-            font-size: 12px;
-            font-weight: 600;
-        }
-
-        .amount {
-            background: #eef5f7;
-            border: 1px solid #8aa6b2;
-            font-size: 16px;
-            grid-column: 1 / -1;
-            padding: 4mm;
-            text-align: center;
-        }
-
-        .signatures {
-            bottom: 7mm;
-            display: grid;
-            gap: 8mm;
-            grid-template-columns: 1fr 1fr;
-            left: 8mm;
-            position: absolute;
-            right: 8mm;
-        }
-
-        .signature {
-            border-top: 1px solid #263746;
-            padding-top: 2mm;
-            text-align: center;
-        }
-
-        .small {
-            color: #52616b;
-            font-size: 9px;
-        }
-
-        @media print {
-            .toolbar {
-                display: none;
-            }
-
-            .receipt {
-                break-inside: avoid;
-            }
-        }
-
-        .avertissement {
-            color: red;
-            font-weight: bold;
-            font-size: 16px;
-        }
+        .receipt-header, .receipt-signatures { border-collapse: collapse; width: 100%; }
+        .receipt-header { border-bottom: 2px solid #263746; margin-bottom: 4mm; }
+        .receipt-header td { padding: 0 0 3mm; vertical-align: top; }
+        .logo { max-height: 16mm; max-width: 62mm; }
+        .location { color: #52616b; text-align: right; }
+        .title-row { border-bottom: 1px solid #d5dadd; padding-bottom: 3mm; width: 100%; }
+        .brand { font-size: 14px; font-weight: bold; }
+        .copy { background: #eef5f7; border: 1px solid #8aa6b2; color: #263746; font-size: 9px; font-weight: bold; padding: 2mm; text-align: center; text-transform: uppercase; }
+        .code { color: #52616b; font-size: 9px; margin-top: 2mm; }
+        .statement { line-height: 1.6; margin: 4mm 0; }
+        .value { font-size: 11px; font-weight: bold; }
+        .amounts { background: #eef5f7; border: 1px solid #8aa6b2; border-collapse: collapse; margin: 3mm 0; width: 100%; }
+        .amounts td { padding: 3mm; vertical-align: top; width: 50%; }
+        .amounts td + td { border-left: 1px solid #8aa6b2; }
+        .amounts tr + tr td { border-top: 1px solid #8aa6b2; }
+        .label { color: #52616b; display: block; font-size: 8px; margin-bottom: 1mm; text-transform: uppercase; }
+        .amount { font-size: 13px; font-weight: bold; }
+        .warning { background: #fff5f5; border: 1px solid #d99; color: #842029; font-size: 8px; line-height: 1.4; margin-top: 3mm; padding: 2mm; }
+        .acknowledgment { line-height: 1.5; margin-top: 4mm; text-align: center; }
+        .receipt-signatures { margin-top: 12mm; }
+        .receipt-signatures td { text-align: center; vertical-align: top; width: 50%; }
+        .signature-space { height: 12mm; }
+        .signature-label { border-top: 1px solid #263746; display: block; padding-top: 2mm; }
+        .signer { font-weight: bold; margin-top: 2mm; }
+        .card-frame { border: 1px solid #8aa6b2; height: 30mm; margin: 2mm auto 0; padding: 1mm; width: 42mm; }
+        .card { display: block; height: 26mm; margin: 0 auto; max-width: 38mm; }
     </style>
 </head>
 @php
-
-$logoPath = 'assets/images/entete.png';
-//$logoPath = 'storage/images/entete.png';
-//$b = file_exists($logoPath);
-//dd($b);
-//dd($module);
-$devisedepot = infoParRekete("SELECT * FROM caisses WHERE idadresse = '" . $transfert->iddepart . "'", 'devise');  
-
-$devisedestination = infoParRekete("SELECT * FROM caisses WHERE idadresse = '" . $transfert->iddestination . "'", 'devise'); 
-$montantVerse = $module === 'recuretrait'
-    ? ($transfert->montpaye ?? $transfert->montretrait)
-    : $transfert->montretrait;
-
-
+    $logoPath = 'assets/images/entete.png';
+    $devisedepot = infoParRekete("SELECT * FROM caisses WHERE idadresse = '" . $transfert->iddepart . "'", 'devise');
+    $devisedestination = infoParRekete("SELECT * FROM caisses WHERE idadresse = '" . $transfert->iddestination . "'", 'devise');
+    $montantVerse = $module === 'recuretrait'
+        ? ($transfert->montpaye ?? $transfert->montretrait)
+        : $transfert->montretrait;
+    $transfertRetire = !empty($transfert->datepayement);
+    $nomSignataire = $transfertRetire
+        ? ($transfert->recepteur ?: '-')
+        : ($transfert->expediteur ?: '-');
+    $libelleSignataire = $transfertRetire ? 'récepteur' : 'expéditeur';
+    $carte = $transfertRetire ? $transfert->carte_recepteur : $transfert->cartexpediteur;
+    $photoPath = $carte ? 'storage/images/Acteurs/' . $carte : null;
+    $locationDate = ($transfert->villedepart ?: '-') . ' le ' .
+        ($transfert->datepayement ? date('d/m/Y H:i', strtotime($transfert->datepayement)) : date('d/m/Y H:i'));
+    $agent = Auth::user();
 @endphp
-
 <body>
-    <!-- <div class="toolbar"><button type="button" onclick="window.print()">Imprimer / Enregistrer en PDF</button></div> -->
-    <div class="toolbar"> </div>
+    <table class="receipt-sheet">
+        <tr>
+        @foreach (['Exemplaire client', 'Exemplaire caisse'] as $copie)
+            <td class="receipt">
+                <table class="receipt-header">
+                    <tr>
+                        <td><img class="logo" src="{{ public_path($logoPath) }}" alt="Global Vision"></td>
+                        <td class="location">{{ $locationDate }}</td>
+                    </tr>
+                </table>
 
-    @foreach (['Exemplaire client', 'Exemplaire caisse'] as $copie)
+                <table class="title-row">
+                    <tr>
+                        <td>
+                            <div class="brand">PAIEMENT FOURNISSEUR</div>
+                            <div class="code">Référence : {{ $transfert->code ?: '-' }}</div>
+                        </td>
+                        <td style="width: 32%;"><div class="copy">{{ $copie }}</div></td>
+                    </tr>
+                </table>
 
-    @php
-    $loc = $transfert->villedepart ?: '-';
-    $loc .=' le ';
-    $loc .= $transfert->datepayement ? date('d/m/Y H:i', strtotime($transfert->datepayement)) : date('d/m/Y H:i');
-    $u = Auth::user();
-    @endphp
-    <section class="receipt">
+                <div class="statement">
+                    La Société Global Vision reconnaît avoir reçu des mains de
+                    <span class="value">{{ $transfert->expediteur ?: '-' }}</span>.
+                </div>
 
-        <table style="width: 100%; border-collapse: collapse;">
-            <tr>
-                <td style="width: 50%; vertical-align: top;">
-                    <img class="logoentete " src="{{ public_path($logoPath)}}" alt="KK">
+                <table class="amounts">
+                    <tr>
+                        <td>
+                            <span class="label">Montant déposé</span>
+                            <span class="amount">{{ number_format((float) $transfert->montdepot, 0, ',', ' ') }} {{ $devisedepot }}</span>
+                        </td>
+                        <td>
+                            <span class="label">Équivalent à remettre</span>
+                            <span class="amount">{{ number_format((float) $montantVerse, 0, ',', ' ') }} {{ $devisedestination }}</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2">
+                            <span class="label">Bénéficiaire</span>
+                            <span class="value">{{ $transfert->recepteur ?: '-' }}</span>
+                        </td>
+                    </tr>
+                </table>
 
-                </td>
-                <td style="width: 50%; vertical-align: top; text-align: right;"><span class="value">{{ $loc}}</span>
-                </td>
-            </tr>
-        </table>
-
-        <div class="header">
-            <table style="width: 100%; border-collapse: collapse;">
-                <tr>
-                    <td style="width: 70%; vertical-align: top;">
-                        <div class="brand">PAYEMENT FOURNISSEUR</div>
-                    </td>
-                    <td style="width: 30%; vertical-align: top; text-align: right;">
-                        <div class="copy">{{ $copie }}</div>
-                    </td>
-                </tr>
-            </table>
-        </div>
-
-        <!-- <h1>Confirmation de retrait</h1> -->
-        <p>La Société Global Vision reconnait avoir reçu des mains de : <span class="value">{{ $transfert->expediteur ?: '-' }}</span>
-            <br>
-            La somme de : <span class="value">{{ number_format((float) $transfert->montdepot, 0, ',', ' ') }} </span> {{ $devisedepot }}
-            <br>
-            Equivalent de : <span class="value">{{ number_format((float) $montantVerse, 0, ',', ' ') }} </span> {{ $devisedestination }}
-            A remettre à son Fournisseur Mr/Mme <span class="value">{{ $transfert->recepteur ?: '-' }}</span>
-            <br>
-        <div class="amount">
-            <div class="avertissement">
-                @if($module =='recudepot')
-                <span>NB : </span>Nous vous informons que nous n'avons aucune relation de collaboration
-                avec votre fournisseur (corespondant) et nous nous désolidarisons de la non exécution de votre
-                commande. Nous ne sommes en aucun cas impliqués, ni responsable des dommages qui pourraient arriver et déclinons toutes responsabilité à ce titre
-            @endif
-            </div>
-
-            <div>
-                En foi de quoi la présente décharge est établie pour servir et valoir ce que de droit
-            </div>
-        </div>
-
-        </p>
-        <!-- <div class="code">N° {{ $transfert->code }}</div>
-        <div class="grid">
-            <div class="field"><span class="label">Date du transfert</span><span class="value">{{ $transfert->datetransfert ? date('d/m/Y H:i', strtotime($transfert->datetransfert)) : '-' }}</span></div>
-            <div class="field"><span class="label">Date du retrait</span><span class="value">{{ $transfert->datepayement ? date('d/m/Y H:i', strtotime($transfert->datepayement)) : date('d/m/Y H:i') }}</span></div>
-            <div class="field"><span class="label">Expéditeur</span><span class="value">{{ $transfert->expediteur ?: '-' }}</span></div>
-            <div class="field"><span class="label">Récepteur</span><span class="value">{{ $transfert->recepteur ?: '-' }}</span></div>
-            <div class="field"><span class="label">Départ</span><span class="value">{{ $transfert->villedepart ?: '-' }}</span></div>
-            <div class="field"><span class="label">Destination</span><span class="value">{{ $transfert->villedestination ?: '-' }}</span></div>
-            <div class="field"><span class="label">Moyen de transfert</span><span class="value">{{ $transfert->moyen ?: '-' }}</span></div>
-            <div class="field"><span class="label">Caisse</span><span class="value">{{ $transfert->caisse ?: '-' }}</span></div>
-            <div class="amount"><span class="label">Montant reçu</span>{{ number_format((float) $transfert->montretrait, 0, ',', ' ') }}</div>
-        </div> -->
-        <br>
-        <table style="width: 100%; ">
-            <tr>
-                <td style="width: 50%; vertical-align: top;">
-                    <div class=""><span class="value">Signature et numéro du {{($module =='recudepot')?'déposant':'récepteur'}} </span></div>
-                </td>
-                <td style="width: 50%; vertical-align: top; text-align: right;">
-                    <div class=""><span class="value">Signature et cachet du caissier(ère)</span></div>
-                </td>
-            </tr>
-            <tr>
-                <td style="height: 30px;"> </td>
-            </tr>
-            <tr>
-                <td style="width: 50%; vertical-align: top; text-align: center;">
-                    <div class=""><span class="value">{{ ($module =='recudepot')? ($transfert->expediteur ?: '-'):($transfert->recepteur ?: '-') }}</span></div>
-                    <div>
-                    @php 
-                    if($module =='recudepot')  $photoPath = 'storage/images/Acteurs/'.$transfert->cartexpediteur;
-                    if($module =='recuretrait')  $photoPath = 'storage/images/Acteurs/'.$transfert->carte_recepteur;
-                    @endphp
-                        <img class="carteacteur " src="{{ public_path($photoPath)}}" alt="acteur">
+                @if($module == 'recudepot')
+                    <div class="warning">
+                        <strong>Important :</strong> Nous n'avons aucune relation de collaboration avec votre fournisseur
+                        (correspondant) et ne sommes pas responsables de l'exécution de votre commande ni des dommages éventuels.
                     </div>
-                </td>
-                <td style="width: 50%; vertical-align: top; text-align: center;">
-                    <div class=""><span class="value">{{ $u->name ?: '-' }}</span></div>
-                </td>
-            </tr>
-        </table>
-        
-    </section>
-    <br><br>
-    @endforeach
-</body>
+                @endif
 
+                <div class="acknowledgment">
+                    La présente décharge est établie pour servir et valoir ce que de droit.
+                </div>
+
+                <table class="receipt-signatures">
+                    <tr>
+                        <td><div class="signature-space"></div><span class="signature-label">Signature de l'{{ $libelleSignataire }}</span></td>
+                        <td><div class="signature-space"></div><span class="signature-label">Signature et cachet du caissier(ère)</span></td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div class="signer">{{ $nomSignataire }}</div>
+                            <div class="card-frame">
+                                @if($photoPath && file_exists(public_path($photoPath)))
+                                    <img class="card" src="{{ public_path($photoPath) }}" alt="Pièce d'identité">
+                                @else
+                                    <span class="label">Carte non disponible</span>
+                                @endif
+                            </div>
+                        </td>
+                        <td><div class="signer">{{ $agent ? $agent->name : '-' }}</div></td>
+                    </tr>
+                </table>
+            </td>
+        @endforeach
+        </tr>
+    </table>
+</body>
 </html>

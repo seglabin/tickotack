@@ -4,33 +4,38 @@
     <meta charset="utf-8">
     <title>Reçu de retrait {{ $expedition->code }}</title>
     <style>
-        @page { size: A5 portrait; margin: 8mm; }
+        @page { size: A4 landscape; margin: 8mm; }
         * { box-sizing: border-box; }
         body { color: #17202a; font-family: Arial, sans-serif; font-size: 9px; margin: 0; }
-        .receipt { border: 1px solid #263746; margin-bottom: 0; min-height: 0; padding: 5mm; page-break-after: always; page-break-inside: avoid; }
-        .receipt:last-child { page-break-after: auto; }
-        .logo { max-height: 14mm; max-width: 55mm; }
-        .header { border-bottom: 2px solid #263746; margin-bottom: 2mm; padding-bottom: 2mm; }
+        .receipt-sheet { border-collapse: collapse; page-break-inside: avoid; table-layout: fixed; width: 100%; }
+        .receipt { border: 1px solid #263746; height: 180mm; padding: 6mm; page-break-inside: avoid; position: relative; vertical-align: top; width: 50%; }
+        .receipt:first-child { border-right: 1px dashed #7f8c8d; }
+        .receipt:last-child { border-left: 0; }
+        .header { border-bottom: 2px solid #263746; margin-bottom: 4mm; padding-bottom: 3mm; }
         .brand { font-size: 14px; font-weight: bold; }
-        .copy { color: #52616b; font-size: 8px; text-align: right; text-transform: uppercase; }
+        .copy { background: #eef5f7; border: 1px solid #8aa6b2; color: #263746; font-size: 8px; font-weight: bold; padding: 2mm; text-align: right; text-transform: uppercase; }
+        .logo { max-height: 14mm; max-width: 55mm; }
         .code { font-size: 11px; font-weight: bold; text-align: center; }
         table { border-collapse: collapse; width: 100%; }
-        .details td { border-bottom: 1px solid #d5dadd; padding: 1.2mm 1mm; vertical-align: top; width: 50%; }
-        .receiver-card { display: block; margin-top: 1mm; max-height: 18mm; max-width: 48mm; }
+        .details { margin-top: 3mm; }
+        .details td { border-bottom: 1px solid #d5dadd; padding: 2mm 1mm; vertical-align: top; width: 50%; }
+        .receiver-card { display: block; margin-top: 1mm; max-height: 18mm; max-width: 38mm; }
         .label { color: #52616b; display: block; font-size: 7px; margin-bottom: 0.3mm; text-transform: uppercase; }
         .value { font-size: 9px; font-weight: bold; }
-        .amount { background: #eef5f7; border: 1px solid #8aa6b2; font-size: 12px; margin-top: 2mm; padding: 2mm; text-align: center; }
-        .signatures { margin-top: 3mm; page-break-inside: avoid; }
+        .amount { background: #eef5f7; border: 1px solid #8aa6b2; font-size: 12px; margin-top: 3mm; padding: 3mm; text-align: center; }
+        .signatures { bottom: 6mm; left: 6mm; page-break-inside: avoid; position: absolute; right: 6mm; }
         .signatures td { text-align: center; vertical-align: top; width: 50%; }
-        .signature-space { height: 12mm; }
+        .signature-space { height: 18mm; }
         .signature { border-top: 1px solid #263746; display: block; padding-top: 1mm; }
-        .signature-name { font-weight: bold; margin-top: 3mm; }
-        .notice { margin: 2mm 0 0; text-align: center; }
+        .signature-name { font-weight: bold; margin-top: 2mm; }
+        .notice { background: #eef5f7; margin: 3mm 0 0; padding: 2mm; text-align: center; }
     </style>
 </head>
 <body>
+<table class="receipt-sheet">
+    <tr>
 @foreach (['Exemplaire client', 'Exemplaire caisse'] as $copie)
-    <section class="receipt">
+    <td class="receipt">
         <table class="header">
             <tr>
                 <td><img class="logo" src="{{ public_path('assets/images/entete.png') }}" alt="Logo"></td>
@@ -92,7 +97,9 @@
                 </td>
             </tr>
         </table>
-    </section>
+    </td>
 @endforeach
+    </tr>
+</table>
 </body>
 </html>

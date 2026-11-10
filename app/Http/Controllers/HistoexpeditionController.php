@@ -99,7 +99,7 @@ class HistoexpeditionController extends Controller
         $agent = auth()->user()?->name;
 
         return Pdf::loadView('back.expedition-recu', compact('expedition', 'retrait', 'agent'))
-            ->setPaper('A5', 'portrait')
+            ->setPaper('A4', 'landscape')
             ->stream('recu-retrait-colis-' . $expedition->code . '.pdf');
     }
 

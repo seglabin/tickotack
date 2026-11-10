@@ -99,6 +99,7 @@ class PageController extends Controller
                     'users' => DB::table('users')->where('actif', true)->count(),
                     'expeditions' => DB::table('expeditions')->whereDate('datenreg', $today)->count(),
                     'transfers' => DB::table('transferts')->whereDate('datetransfert', $today)->count(),
+                    'recipes' => DB::table('recettes')->whereDate('daterecette', $today)->count(),
                     'cashboxes' => DB::table('caisses')->count(),
                     'pendingShipments' => DB::table('expeditions as e')
                         ->leftJoinSub(
@@ -158,17 +159,29 @@ class PageController extends Controller
                     ->groupBy('idcaisse')
                     ->select('idcaisse')
                     ->selectRaw('SUM(montant) as total');
+                $recipePaymentsByCashbox = DB::table('recettes')
+                    ->groupBy('idcaisse')
+                    ->select('idcaisse')
+                    ->selectRaw('SUM(montantrecette) as total');
                 $cashboxPaymentComparison = DB::table('caisses as c')
                     ->leftJoinSub($expeditionPaymentsByCashbox, 'expedition_payments', 'expedition_payments.idcaisse', '=', 'c.id')
                     ->leftJoinSub($transferPaymentsByCashbox, 'transfer_payments', 'transfer_payments.idcaisse', '=', 'c.id')
+                    ->leftJoinSub($recipePaymentsByCashbox, 'recipe_payments', 'recipe_payments.idcaisse', '=', 'c.id')
                     ->select(
                         'c.id',
                         'c.libelle',
                         'c.devise',
                         DB::raw('COALESCE(expedition_payments.total, 0) as expeditions_payees'),
-                        DB::raw('COALESCE(transfer_payments.total, 0) as transferts_payes')
+                        DB::raw('COALESCE(transfer_payments.total, 0) as transferts_payes'),
+                        DB::raw('COALESCE(recipe_payments.total, 0) as recettes')
                     )
                     ->orderBy('c.libelle')
+                    ->get();
+                $recentRecipes = DB::table('recettes as r')
+                    ->leftJoin('caisses as c', 'c.id', '=', 'r.idcaisse')
+                    ->select('r.daterecette', 'r.libelle', 'r.montantrecette', 'c.libelle as caisse')
+                    ->orderByDesc('r.daterecette')
+                    ->limit(5)
                     ->get();
                 $recentCashAdvances = DB::table('approcaisses as a')
                     ->leftJoin('caisses as c', 'c.id', '=', 'a.idcaisse')
@@ -183,7 +196,8 @@ class PageController extends Controller
                     'recentExpeditions',
                     'recentTransfers',
                     'cashboxPaymentComparison',
-                    'recentCashAdvances'
+                    'recentCashAdvances',
+                    'recentRecipes'
                 ));
             }
 
@@ -220,6 +234,7 @@ class PageController extends Controller
             $availablePermissions = session('menusUser', []);
             $dashboardActions = [
                 ['permission' => 3, 'title' => 'Dépenses', 'description' => 'Consulter et enregistrer les dépenses.', 'url' => url('depense'), 'icon' => 'fa-receipt', 'color' => 'orange'],
+                ['permission' => 3, 'title' => 'Recettes', 'description' => 'Consulter et enregistrer les recettes.', 'url' => url('recette'), 'icon' => 'fa-coins', 'color' => 'green'],
                 ['permission' => 4, 'title' => 'Expéditions', 'description' => 'Gérer les colis et leurs retraits.', 'url' => url('expedition'), 'icon' => 'fa-box', 'color' => 'purple'],
                 ['permission' => 5, 'title' => 'Conteneurs', 'description' => 'Suivre les expéditions regroupées.', 'url' => url('conteneur'), 'icon' => 'fa-shipping-fast', 'color' => 'green'],
                 ['permission' => 6, 'title' => 'Transferts', 'description' => 'Enregistrer les dépôts et retraits.', 'url' => url('transfert'), 'icon' => 'fa-exchange-alt', 'color' => 'teal'],

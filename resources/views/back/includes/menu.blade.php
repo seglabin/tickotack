@@ -3,7 +3,7 @@
                         $config = session('config');
                         $module = session('module')!= null?session('module'):'';
                         $tparam = ['element', 'moyentransferts', 'adresse', 'acteur', 'caisse', 'tauxtransfert', 'tarifexpedition', 'article', 'categorie', 'marque', 'moyenpaiement', 'typelivraison'];
-                        $toperation = ['approcaisse', 'mvtcaisse', 'depense', 'transfert', 'expedition', 'conteneur'];
+                        $toperation = ['approcaisse', 'mvtcaisse', 'depense', 'recette', 'transfert', 'expedition', 'conteneur'];
                       
 						@endphp
 
@@ -25,6 +25,7 @@
                         							@if(is_array($menusUser) && in_array(2, $menusUser))<li class="{{ ($config == 'approcaisse' && $module == 'approcaisse') ? 'active' : '' }}"><a href="{{ url('approcaisse') }}">Appro caisse</a></li>@endif
                                                 @if(is_array($menusUser) && in_array(35, $menusUser))<li class="{{ ($config == 'mvtcaisse' && $module == 'mvtcaisse') ? 'active' : '' }}"><a href="{{ url('mvtcaisse') }}">Transactions entre caisse</a></li>@endif
                         							@if(is_array($menusUser) && in_array(3, $menusUser))<li class="{{ ($config == 'depense' && $module == 'depense') ? 'active' : '' }}"><a href="{{ url('depense') }}">Depense</a></li>@endif
+                                                    @if(is_array($menusUser) && in_array(3, $menusUser))<li class="{{ ($config == 'recette' && $module == 'recette') ? 'active' : '' }}"><a href="{{ url('recette') }}">Recettes</a></li>@endif
 												@if(is_array($menusUser) && (in_array(4, $menusUser) || in_array(5, $menusUser)))
 												<li class="{{ in_array($config, ['expedition', 'conteneur']) ? 'active' : '' }} menu-item-has-children">
 													<a href="#">Expédition</a>

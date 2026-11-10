@@ -157,6 +157,9 @@ if(empty($conteneurs)) {
           <div id="expeditionsConteneurContenu" class="table-responsive"></div>
         </div>
         <div class="modal-footer">
+          <button type="button" class="btn btn-primary" id="btnImprimerExpeditionsConteneur" onclick="imprimerExpeditionsConteneur();" disabled>
+            <i class="fa fa-print me-1" aria-hidden="true"></i> Imprimer / Exporter en PDF
+          </button>
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
         </div>
       </div>
@@ -169,10 +172,12 @@ if(empty($conteneurs)) {
       const chargement = document.getElementById('expeditionsConteneurChargement');
       const message = document.getElementById('expeditionsConteneurMessage');
       const contenu = document.getElementById('expeditionsConteneurContenu');
+      const boutonImprimer = document.getElementById('btnImprimerExpeditionsConteneur');
       const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
       chargement.classList.remove('d-none');
       message.className = 'alert d-none';
       contenu.replaceChildren();
+      boutonImprimer.disabled = true;
       modal.show();
 
       fetch('/conteneur/' + encodeURIComponent(id) + '/expeditions', {
@@ -240,6 +245,7 @@ if(empty($conteneurs)) {
             });
           });
           contenu.appendChild(table);
+          boutonImprimer.disabled = false;
         })
         .catch(function (error) {
           message.textContent = error.message;
@@ -248,6 +254,105 @@ if(empty($conteneurs)) {
         .finally(function () {
           chargement.classList.add('d-none');
         });
+    }
+
+    function imprimerExpeditionsConteneur() {
+      const contenu = document.getElementById('expeditionsConteneurContenu');
+      const tableau = contenu.querySelector('table');
+      const informations = contenu.querySelector('.row');
+      const message = document.getElementById('expeditionsConteneurMessage');
+
+      if (!tableau) {
+        message.textContent = 'Aucun tableau d’expéditions à imprimer.';
+        message.className = 'alert alert-warning';
+        return;
+      }
+
+      const fenetreImpression = window.open('', '_blank');
+      if (!fenetreImpression) {
+        message.textContent = 'La fenêtre d’impression a été bloquée. Autorisez les fenêtres pop-up puis réessayez.';
+        message.className = 'alert alert-danger';
+        return;
+      }
+
+      const documentImpression = fenetreImpression.document;
+      documentImpression.documentElement.lang = 'fr';
+      documentImpression.title = document.getElementById('modalExpeditionsConteneurLabel').textContent.trim();
+
+      const style = documentImpression.createElement('style');
+      style.textContent = [
+        '@page { size: A4 landscape; margin: 12mm; }',
+        'body { color: #17202a; font-family: Arial, sans-serif; font-size: 10px; }',
+        '.receipt-header { border-collapse: collapse; margin-bottom: 16px; width: 100%; }',
+        '.receipt-header td { padding: 0 0 8px; vertical-align: top; }',
+        '.receipt-header tr:first-child { border-bottom: 2px solid #263746; }',
+        '.receipt-logo { max-height: 14mm; max-width: 55mm; }',
+        '.receipt-date { color: #52616b; text-align: right; }',
+        '.receipt-title { font-size: 16px; font-weight: bold; padding-top: 8px !important; text-transform: uppercase; }',
+        '.informations { display: flex; gap: 12px; margin-bottom: 16px; }',
+        '.information { border: 1px solid #adb5bd; border-radius: 4px; flex: 1; padding: 8px; }',
+        '.label { color: #6c757d; display: block; font-size: 9px; margin-bottom: 4px; }',
+        'table { border-collapse: collapse; width: 100%; }',
+        'thead { display: table-header-group; }',
+        'tr { page-break-inside: avoid; }',
+        'th, td { border: 1px solid #6c757d; padding: 6px; text-align: left; }',
+        'th { background: #e9ecef; }',
+        '@media print { body { print-color-adjust: exact; -webkit-print-color-adjust: exact; } }'
+      ].join('\n');
+      documentImpression.head.appendChild(style);
+
+      const entete = documentImpression.createElement('table');
+      entete.className = 'receipt-header';
+      entete.innerHTML = '<tbody><tr><td><img class="receipt-logo" src="' +
+        new URL('/assets/images/entete.png', window.location.origin).href +
+        '" alt="Global Vision"></td><td class="receipt-date"></td></tr>' +
+        '<tr><td colspan="2" class="receipt-title"></td></tr></tbody>';
+      entete.querySelector('.receipt-date').textContent = new Intl.DateTimeFormat('fr-FR', {
+        dateStyle: 'long',
+        timeStyle: 'short'
+      }).format(new Date());
+      entete.querySelector('.receipt-title').textContent =
+        document.getElementById('modalExpeditionsConteneurLabel').textContent.trim();
+      documentImpression.body.appendChild(entete);
+
+      if (informations) {
+        const copieInformations = informations.cloneNode(true);
+        copieInformations.className = 'informations';
+        copieInformations.querySelectorAll('.col-md-4').forEach(function (colonne) {
+          colonne.className = 'information';
+        });
+        copieInformations.querySelectorAll('.text-muted').forEach(function (libelle) {
+          libelle.className = 'label';
+        });
+        documentImpression.body.appendChild(copieInformations);
+      }
+
+      const copieTableau = tableau.cloneNode(true);
+      copieTableau.className = '';
+      documentImpression.body.appendChild(copieTableau);
+      documentImpression.close();
+
+      const logo = entete.querySelector('.receipt-logo');
+      const lancerImpression = function () {
+        fenetreImpression.focus();
+        fenetreImpression.print();
+      };
+      if (logo.complete) {
+        if (logo.naturalWidth > 0) {
+          lancerImpression();
+        } else {
+          message.textContent = 'Impossible de charger le logo de l’en-tête du reçu.';
+          message.className = 'alert alert-danger';
+          fenetreImpression.close();
+        }
+      } else {
+        logo.addEventListener('load', lancerImpression, { once: true });
+        logo.addEventListener('error', function () {
+          message.textContent = 'Impossible de charger le logo de l’en-tête du reçu.';
+          message.className = 'alert alert-danger';
+          fenetreImpression.close();
+        }, { once: true });
+      }
     }
   </script>
   @endif

@@ -354,6 +354,7 @@ class TransfertController extends Controller
         $lenregistrement = ($id != null) ? transfert::findOrFail($id) : null;
         if ($lenregistrement) {
             $this->authorizeRecordOwner($lenregistrement);
+            $this->authorizeUnpaidTransfer($lenregistrement);
         }
       
          $operaeur =  null;
@@ -406,6 +407,7 @@ class TransfertController extends Controller
         $existing = ($id != 0 && $id != null) ? transfert::findOrFail($id) : null;
         if ($existing) {
             $this->authorizeRecordOwner($existing);
+            $this->authorizeUnpaidTransfer($existing);
         }
 
         try {
@@ -483,6 +485,7 @@ class TransfertController extends Controller
     {
         $transfert = transfert::findOrFail($id);
         $this->authorizeRecordOwner($transfert);
+        $this->authorizeUnpaidTransfer($transfert);
 
         try {
             // Supprimer les opérations financières rattachées
@@ -496,5 +499,10 @@ class TransfertController extends Controller
         } catch (\Exception $e) {
             return redirect()->route('transfert')->with('error', 'Erreur de suppression : ' . $e->getMessage());
         }
+    }
+
+    private function authorizeUnpaidTransfer(transfert $transfert): void
+    {
+        abort_unless(empty($transfert->datepayement), 403, 'Un transfert retiré ne peut plus être modifié ou supprimé.');
     }
 }
