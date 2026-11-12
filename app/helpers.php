@@ -403,6 +403,13 @@ function tableau_html($t, $liste_entete, $liste_colonne, $btn = "", $num = true,
                 if ($actions !== '') {
                     $html .= '<div class="dropdown expedition-actions"><button type="button" class="btn btn-outline-primary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Actions du colis"><i class="fa fa-ellipsis-h me-1"></i>Actions</button><div class="dropdown-menu dropdown-menu-end expedition-actions-menu">' . $actions . '</div></div>';
                 }
+                if (
+                    strpos($btn, 'recu') !== false
+                    && mb_strtolower(trim((string) ($v->etat ?? ''))) === 'retiré'
+                ) {
+                    $urlRecu = htmlspecialchars(route('expedition.recu-retrait', $id), ENT_QUOTES, 'UTF-8');
+                    $html .= '<a href="' . $urlRecu . '" target="_blank" rel="noopener" class="btn btn-secondary btn-sm" style="margin:0 2px; padding:6px 10px; font-size:14px;" title="Imprimer le reçu de retrait" aria-label="Imprimer le reçu de retrait"><i class="fa fa-print"></i></a>';
+                }
             }
            
             $html .= '</td>';

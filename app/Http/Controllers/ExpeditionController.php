@@ -111,7 +111,7 @@ class ExpeditionController extends Controller
             $cols = 'expediteur|recepteur|numrecepteur|trajet|etat|conteneur';
             // $entete = 'Date|Code|Expéditeur|Trajet|Montant|Poids|Statut|Conteneur';
             // $cols = 'datenreg|code|expediteur|trajet|montant|poids|etat|conteneur';
-            $btn = $listeRetraits ? 'historique|historique-paiement|retraitcolis' : 'modifier|historique|supprimer|paymentcolis|historique-paiement';
+            $btn = $listeRetraits ? 'historique|historique-paiement|retraitcolis|recu' : 'modifier|historique|supprimer|paymentcolis|historique-paiement|recu';
             // $btn = 'modifier|retraitcolis|supprimer|envoicolis|passagedouane|arrivemagasin';
 
             session(['config' => 'expedition']);

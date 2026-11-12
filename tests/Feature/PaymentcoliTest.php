@@ -108,6 +108,43 @@ class PaymentcoliTest extends TestCase
         ]);
     }
 
+    public function test_fully_paid_expedition_can_be_withdrawn_without_an_additional_payment(): void
+    {
+        $expeditionId = $this->creerExpedition(100, 'Arrivé au magasin');
+        DB::table('paymentcolis')->insert([
+            'idcolis' => $expeditionId,
+            'montant' => 100,
+            'payment_date' => '2026-10-19 09:00:00',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->postJson('/enregistrer-histoexpedition', [
+            'idexpedition' => $expeditionId,
+            'action' => 'retraitcolis',
+            'datetat' => '2026-10-19',
+            'montantpaye' => '0.00',
+        ])
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('message', 'Retrait effectué avec succès.')
+            ->assertJsonPath('receipt_url', route('expedition.recu-retrait', $expeditionId));
+
+        $etatRetireId = DB::table('elements')
+            ->where('nomtable', 'etat')
+            ->where('libelle', 'Retiré')
+            ->value('id');
+        $this->assertDatabaseHas('expeditions', [
+            'id' => $expeditionId,
+            'idetat' => $etatRetireId,
+            'montantpaye' => 0,
+        ]);
+        $this->assertDatabaseHas('histoexpeditions', [
+            'idexpedition' => $expeditionId,
+            'idetat' => $etatRetireId,
+        ]);
+    }
+
     private function creerExpedition(float $montant, string $etat = 'En transit'): int
     {
         $adresseDepart = DB::table('adresses')->insertGetId([

@@ -766,15 +766,18 @@ if(empty($conteneurs)) {
     document.getElementById('histo_datetat').value = new Date().toISOString().slice(0, 10);
     const envoiColis = action === 'envoicolis';
     const retraitColis = action === 'retraitcolis';
+    let retraitSansPaiement = false;
     const detailsContainer = document.getElementById('histo_expedition_details');
     detailsContainer.replaceChildren();
     detailsContainer.classList.toggle('d-none', !retraitColis);
     if (retraitColis && bouton?.dataset.expedition) {
       const expedition = JSON.parse(bouton.dataset.expedition);
-      montantPayeInput.value = Math.max(
+      const montantRestant = Math.max(
         0,
-        Number(expedition.montant || 0) - Number(expedition.totalpaiementcolis || 0)
-      ).toFixed(2);
+        Math.round((Number(expedition.montant || 0) - Number(expedition.totalpaiementcolis || 0)) * 100) / 100
+      );
+      montantPayeInput.value = montantRestant.toFixed(2);
+      retraitSansPaiement = montantRestant === 0;
       const titre = document.createElement('strong');
       titre.textContent = 'Expédition ' + (expedition.code || '');
       detailsContainer.appendChild(titre);
@@ -809,6 +812,7 @@ if(empty($conteneurs)) {
     document.getElementById('modalHistoexpeditionLabel').textContent = 'Enregistrer : ' + libellesHistoexpedition[action];
     document.getElementById('alertHistoexpedition').className = 'alert d-none';
     bootstrap.Modal.getOrCreateInstance(document.getElementById('modalHistoexpedition')).show();
+    if (retraitSansPaiement) enregistrerHistoexpedition();
   }
 
   function enregistrerHistoexpedition() {

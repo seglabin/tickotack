@@ -180,7 +180,9 @@ class HistoexpeditionController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Étape de l\'expédition enregistrée.',
+                'message' => $donnees['action'] === 'retraitcolis'
+                    ? 'Retrait effectué avec succès.'
+                    : 'Étape de l\'expédition enregistrée.',
                 'id' => $histo->id,
                 'receipt_url' => $donnees['action'] === 'retraitcolis'
                     ? route('expedition.recu-retrait', $donnees['idexpedition'])
