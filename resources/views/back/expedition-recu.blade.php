@@ -57,7 +57,7 @@
 
         .logo {
             max-height: 15mm;
-            width: 80mm;
+            width: 70mm;
         }
 
         .title-row {

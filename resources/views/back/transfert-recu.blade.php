@@ -57,7 +57,7 @@
 
         .logo {
             max-height: 15mm;
-            width: 80mm;
+            width: 70mm;
         }
 
         /* .logo { max-height: 16mm; max-width: 62mm; } */
@@ -96,7 +96,7 @@
 
         .statement {
             line-height: 1.6;
-            margin: 4mm 0;
+            margin: 1mm 0;
         }
 
         .value {
@@ -145,13 +145,13 @@
             color: #842029;
             font-size: 8px;
             line-height: 1.4;
-            margin-top: 3mm;
+            /* margin-top: 3mm; */
             padding: 2mm;
         }
 
         .acknowledgment {
-            line-height: 1.5;
-            margin-top: 4mm;
+            line-height: 1.2;
+            margin-top: 1mm;
             font-size: 13px;
             text-align: center;
         }
@@ -187,17 +187,17 @@
 
         .card-frame {
             border: 1px solid #8aa6b2;
-            height: 30mm;
+            height: 25mm;
             margin: 2mm auto 0;
             padding: 1mm;
-            width: 32mm;
+            width: 30mm;
         }
 
         .card {
             display: block;
-            height: 26mm;
-            margin: 2px auto;
-            max-width: 28mm;
+            height: 25mm;
+            margin: auto;
+            max-width: 30mm;
         }
     </style>
 </head>
