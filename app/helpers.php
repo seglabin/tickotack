@@ -321,7 +321,8 @@ function tableau_html($t, $liste_entete, $liste_colonne, $btn = "", $num = true,
                     $montantColis = htmlspecialchars((string) ($v->montant ?? 0), ENT_QUOTES, 'UTF-8');
                     $totalPaiementsColis = htmlspecialchars((string) ($v->totalpaiementcolis ?? 0), ENT_QUOTES, 'UTF-8');
                     $urlHistoriquePaiement = htmlspecialchars(url('expedition/' . $id . '/paiements'), ENT_QUOTES, 'UTF-8');
-                    $html .= '<button type="button" class="dropdown-item" data-idcolis="' . htmlspecialchars((string) $id, ENT_QUOTES, 'UTF-8') . '" data-codecolis="' . $codeColis . '" data-montantcolis="' . $montantColis . '" data-totalpaiements="' . $totalPaiementsColis . '" data-paiements-url="' . $urlHistoriquePaiement . '" data-enregistrement-url="' . $urlEnregistrementPaiement . '" onclick="ouvrirModalPaiementColis(this);"><i class="fa fa-credit-card me-2"></i>Paiement colis</button>';
+                    $retraitAutomatiquePossible = mb_strtolower(trim((string) ($v->etat ?? ''))) === 'arrivé au magasin';
+                    $html .= '<button type="button" class="dropdown-item" data-idcolis="' . htmlspecialchars((string) $id, ENT_QUOTES, 'UTF-8') . '" data-codecolis="' . $codeColis . '" data-montantcolis="' . $montantColis . '" data-totalpaiements="' . $totalPaiementsColis . '" data-retrait-automatique="' . ($retraitAutomatiquePossible ? '1' : '0') . '" data-paiements-url="' . $urlHistoriquePaiement . '" data-enregistrement-url="' . $urlEnregistrementPaiement . '" onclick="ouvrirModalPaiementColis(this);"><i class="fa fa-credit-card me-2"></i>Paiement colis</button>';
                 }
                 $actionsExpedition = [
                     'envoicolis' => ['Envoi colis', 'fa-truck', 'btn-primary', 2],
@@ -355,6 +356,13 @@ function tableau_html($t, $liste_entete, $liste_colonne, $btn = "", $num = true,
                         }
                         $html .= '<a href="#" class="dropdown-item"' . $details . ' onclick="ouvrirModalHistoexpedition(\'' . $id . '\', \'' . $action . '\', this); return false;"><i class="fa ' . $icone . ' me-2"></i>' . $libelle . '</a>';
                     }
+                }
+                if (
+                    strpos($btn, 'recu') !== false
+                    && mb_strtolower(trim((string) ($v->etat ?? ''))) === 'retiré'
+                ) {
+                    $urlRecu = htmlspecialchars(route('expedition.recu-retrait', $id), ENT_QUOTES, 'UTF-8');
+                    $html .= '<a href="' . $urlRecu . '" target="_blank" rel="noopener" class="dropdown-item"><i class="fa fa-print me-2"></i>Imprimer le reçu de retrait</a>';
                 }
             }
             if ($config == 'conteneur') {
@@ -402,13 +410,6 @@ function tableau_html($t, $liste_entete, $liste_colonne, $btn = "", $num = true,
                 $html = substr($html, 0, $actionsStart);
                 if ($actions !== '') {
                     $html .= '<div class="dropdown expedition-actions"><button type="button" class="btn btn-outline-primary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Actions du colis"><i class="fa fa-ellipsis-h me-1"></i>Actions</button><div class="dropdown-menu dropdown-menu-end expedition-actions-menu">' . $actions . '</div></div>';
-                }
-                if (
-                    strpos($btn, 'recu') !== false
-                    && mb_strtolower(trim((string) ($v->etat ?? ''))) === 'retiré'
-                ) {
-                    $urlRecu = htmlspecialchars(route('expedition.recu-retrait', $id), ENT_QUOTES, 'UTF-8');
-                    $html .= '<a href="' . $urlRecu . '" target="_blank" rel="noopener" class="btn btn-secondary btn-sm" style="margin:0 2px; padding:6px 10px; font-size:14px;" title="Imprimer le reçu de retrait" aria-label="Imprimer le reçu de retrait"><i class="fa fa-print"></i></a>';
                 }
             }
            

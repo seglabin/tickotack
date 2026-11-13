@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\element;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -72,9 +73,39 @@ class PaymentcoliController extends Controller
                 'updated_at' => now(),
             ]);
 
+            $totalApresPaiement = $totalPaye + $montant;
+            $expeditionArrivee = mb_strtolower(trim((string) $expedition->etat)) === 'arrivé au magasin';
+            $retraitEnregistre = $expeditionArrivee
+                && round($totalApresPaiement, 2) === round($montantExpedition, 2);
+
+            if ($retraitEnregistre) {
+                $etatRetire = element::firstOrCreate([
+                    'nomtable' => 'etat',
+                    'libelle' => 'Retiré',
+                ]);
+
+                DB::table('histoexpeditions')->insert([
+                    'datetat' => \Illuminate\Support\Carbon::parse($donnees['payment_date'])->toDateString(),
+                    'reference' => null,
+                    'idexpedition' => $expedition->id,
+                    'idetat' => $etatRetire->id,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+                DB::table('expeditions')
+                    ->where('id', $expedition->id)
+                    ->update([
+                        'idetat' => $etatRetire->id,
+                        'montantpaye' => 0,
+                        'updated_at' => now(),
+                    ]);
+            }
+
             return [
                 'success' => true,
-                'total' => $totalPaye + $montant,
+                'total' => $totalApresPaiement,
+                'retrait_enregistre' => $retraitEnregistre,
             ];
         });
 
@@ -84,8 +115,16 @@ class PaymentcoliController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Paiement du colis enregistré.',
+            'message' => $resultat['retrait_enregistre']
+                ? 'Paiement du colis enregistré et retrait effectué.'
+                : 'Paiement du colis enregistré.',
             'total' => $resultat['total'],
+            'receipt_url' => $resultat['retrait_enregistre']
+                ? route('expedition.recu-retrait', [
+                    'id' => $donnees['idcolis'],
+                    'imprimer' => 1,
+                ])
+                : null,
         ]);
     }
 }

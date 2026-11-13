@@ -67,7 +67,7 @@ class HistoexpeditionController extends Controller
         ]);
     }
 
-    public function recuRetrait($id)
+    public function recuRetrait(Request $request, $id)
     {
         $expedition = DB::table('expeditions as e')
             ->leftJoin('acteurs as exp', 'exp.id', '=', 'e.idexpediteur')
@@ -75,9 +75,21 @@ class HistoexpeditionController extends Controller
             ->leftJoin('adresses as dep', 'dep.id', '=', 'e.iddepart')
             ->leftJoin('adresses as dest', 'dest.id', '=', 'e.iddestination')
             ->leftJoin('elements as tc', 'tc.id', '=', 'e.idtypcolis')
+            ->leftJoinSub(
+                DB::table('paymentcolis')
+                    ->select('idcolis')
+                    ->selectRaw('SUM(montant) as total')
+                    ->groupBy('idcolis'),
+                'paiements',
+                'paiements.idcolis',
+                '=',
+                'e.id'
+            )
             ->where('e.id', $id)
             ->first([
-                'e.id', 'e.code', 'e.datenreg', 'e.nbrcolis', 'e.poids', 'e.montant', 'e.montantpaye', 'e.marque',
+                'e.id', 'e.code', 'e.datenreg', 'e.nbrcolis', 'e.poids', 'e.montant',
+                DB::raw('COALESCE(paiements.total, 0) + COALESCE(e.montantpaye, 0) as montantpaye'),
+                'e.marque',
                 'exp.nom as expediteur', 'exp.tel as telephone_expediteur',
                 'rec.nom as recepteur', 'rec.tel as telephone_recepteur', 'rec.carte as carte_recepteur',
                 'dep.libelle as villedepart', 'dest.libelle as villedestination',
@@ -97,8 +109,13 @@ class HistoexpeditionController extends Controller
         abort_if(!$retrait, 404, 'Retrait introuvable.');
 
         $agent = auth()->user()?->name;
+        $donneesRecu = compact('expedition', 'retrait', 'agent');
 
-        return Pdf::loadView('back.expedition-recu', compact('expedition', 'retrait', 'agent'))
+        if ($request->boolean('imprimer')) {
+            return response()->view('back.expedition-recu', $donneesRecu + ['autoPrint' => true]);
+        }
+
+        return Pdf::loadView('back.expedition-recu', $donneesRecu)
             ->setPaper('A4', 'landscape')
             ->stream('recu-retrait-colis-' . $expedition->code . '.pdf');
     }
@@ -185,7 +202,10 @@ class HistoexpeditionController extends Controller
                     : 'Étape de l\'expédition enregistrée.',
                 'id' => $histo->id,
                 'receipt_url' => $donnees['action'] === 'retraitcolis'
-                    ? route('expedition.recu-retrait', $donnees['idexpedition'])
+                    ? route('expedition.recu-retrait', [
+                        'id' => $donnees['idexpedition'],
+                        'imprimer' => 1,
+                    ])
                     : null,
             ]);
         } catch (\Throwable $e) {

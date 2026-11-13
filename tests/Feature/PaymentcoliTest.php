@@ -36,7 +36,9 @@ class PaymentcoliTest extends TestCase
             'idcolis' => $expeditionId,
             'montant' => '60.00',
             'payment_date' => '2026-10-19 10:00:00',
-        ])->assertOk()->assertJsonPath('success', true);
+        ])->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('receipt_url', null);
         $this->assertDatabaseHas('paymentcolis', [
             'idcolis' => $expeditionId,
             'montant' => 60,
@@ -72,6 +74,112 @@ class PaymentcoliTest extends TestCase
         ])->assertUnprocessable()->assertJsonPath('success', false);
 
         $this->assertDatabaseCount('paymentcolis', 0);
+    }
+
+    public function test_full_payment_records_the_withdrawal_and_returns_a_printable_receipt(): void
+    {
+        $expeditionId = $this->creerExpedition(100, 'Arrivé au magasin');
+        DB::table('paymentcolis')->insert([
+            'idcolis' => $expeditionId,
+            'montant' => 60,
+            'payment_date' => '2026-10-19 09:00:00',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $response = $this->postJson(route('paymentcolis.enregistrer'), [
+            'idcolis' => $expeditionId,
+            'montant' => '40.00',
+            'payment_date' => '2026-10-19 11:00:00',
+        ]);
+
+        $receiptUrl = route('expedition.recu-retrait', [
+            'id' => $expeditionId,
+            'imprimer' => 1,
+        ]);
+        $response
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('message', 'Paiement du colis enregistré et retrait effectué.')
+            ->assertJsonPath('total', 100)
+            ->assertJsonPath('receipt_url', $receiptUrl);
+
+        $etatRetireId = DB::table('elements')
+            ->where('nomtable', 'etat')
+            ->where('libelle', 'Retiré')
+            ->value('id');
+        $this->assertDatabaseHas('expeditions', [
+            'id' => $expeditionId,
+            'idetat' => $etatRetireId,
+            'montantpaye' => 0,
+        ]);
+        $this->assertDatabaseHas('histoexpeditions', [
+            'idexpedition' => $expeditionId,
+            'idetat' => $etatRetireId,
+            'datetat' => '2026-10-19',
+        ]);
+
+        $this->get($receiptUrl)
+            ->assertOk()
+            ->assertSee('window.print()', false)
+            ->assertSee('Montant payé : 100 CFA');
+    }
+
+    public function test_full_payment_before_arrival_does_not_register_withdrawal_or_return_receipt(): void
+    {
+        $expeditionId = $this->creerExpedition(100, 'En transit');
+
+        $this->postJson(route('paymentcolis.enregistrer'), [
+            'idcolis' => $expeditionId,
+            'montant' => '100.00',
+            'payment_date' => '2026-10-19 11:00:00',
+        ])
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('message', 'Paiement du colis enregistré.')
+            ->assertJsonPath('total', 100)
+            ->assertJsonPath('receipt_url', null);
+
+        $this->assertDatabaseHas('expeditions', [
+            'id' => $expeditionId,
+            'idetat' => DB::table('elements')
+                ->where('nomtable', 'etat')
+                ->where('libelle', 'En transit')
+                ->value('id'),
+        ]);
+        $this->assertDatabaseMissing('histoexpeditions', [
+            'idexpedition' => $expeditionId,
+            'idetat' => DB::table('elements')
+                ->where('nomtable', 'etat')
+                ->where('libelle', 'Retiré')
+                ->value('id'),
+        ]);
+    }
+
+    public function test_withdrawal_receipt_is_listed_in_the_expedition_actions_menu(): void
+    {
+        $expeditionId = $this->creerExpedition(100, 'Retiré');
+        session(['config' => 'expedition']);
+        $ligneExpedition = (object) [
+            'id' => $expeditionId,
+            'code' => 'COLIS-TEST',
+            'etat' => 'Retiré',
+            'idetat' => DB::table('elements')
+                ->where('nomtable', 'etat')
+                ->where('libelle', 'Retiré')
+                ->value('id'),
+        ];
+
+        ob_start();
+        tableau_html([$ligneExpedition], 'Code', 'code', 'recu');
+        $html = ob_get_clean();
+
+        $this->assertStringContainsString('expedition-actions-menu', $html);
+        $this->assertStringContainsString(
+            '<a href="' . route('expedition.recu-retrait', $expeditionId) . '" target="_blank" rel="noopener" class="dropdown-item">',
+            $html
+        );
+        $this->assertStringNotContainsString('title="Imprimer le reçu de retrait"', $html);
     }
 
     public function test_withdrawal_payment_cannot_exceed_the_remaining_balance_after_partial_payments(): void
@@ -128,7 +236,18 @@ class PaymentcoliTest extends TestCase
             ->assertOk()
             ->assertJsonPath('success', true)
             ->assertJsonPath('message', 'Retrait effectué avec succès.')
-            ->assertJsonPath('receipt_url', route('expedition.recu-retrait', $expeditionId));
+            ->assertJsonPath('receipt_url', route('expedition.recu-retrait', [
+                'id' => $expeditionId,
+                'imprimer' => 1,
+            ]));
+
+        $this->get(route('expedition.recu-retrait', [
+            'id' => $expeditionId,
+            'imprimer' => 1,
+        ]))
+            ->assertOk()
+            ->assertSee('window.print()', false)
+            ->assertSee('REÇU DE RETRAIT DE COLIS');
 
         $etatRetireId = DB::table('elements')
             ->where('nomtable', 'etat')

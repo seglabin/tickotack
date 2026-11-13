@@ -56,8 +56,8 @@
         }
 
         .logo {
-            max-height: 10mm;
-            width: 90mm;
+            max-height: 15mm;
+            width: 80mm;
         }
 
         /* .logo { max-height: 16mm; max-width: 62mm; } */
@@ -152,6 +152,7 @@
         .acknowledgment {
             line-height: 1.5;
             margin-top: 4mm;
+            font-size: 13px;
             text-align: center;
         }
 
@@ -278,7 +279,7 @@ $agent = Auth::user();
                 <div class="acknowledgment">                   
                     NB: Une fois vos bagages disponibles au magasin, vous serez immédiatement informé par appel et/ou message. Vous
                     disposerez ainsi de 5 jours au maximum pour amener la totalité de votre facture et ramasser vos bagages. Passé ce
-                    délai de 5 jours, vous serez facturé de 2000F CFA par CBM et par jour.
+                    délai de 5 jours, vous serez facturé de 2000F CFA par CBM et par jour. <br>
                     <b style="color: red;"> Apres 20 jours nous ne serons plus responsable de tout ce qui arriverait à votre bagage . </b>
                     <br>
                 La présente décharge est établie pour servir et valoir ce que de droit.

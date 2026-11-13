@@ -435,6 +435,9 @@ if(empty($conteneurs)) {
     const paye = Number(bouton.dataset.totalpaiements || 0);
     form.reset();
     form.action = bouton.dataset.enregistrementUrl;
+    form.dataset.montantExpedition = String(total);
+    form.dataset.totalPaiements = String(paye);
+    form.dataset.retraitAutomatique = bouton.dataset.retraitAutomatique;
     document.getElementById('paiement_idcolis').value = bouton.dataset.idcolis;
     document.getElementById('paiement_date').value = dateLocalePaiement();
     document.getElementById('paiementColisDetails').textContent =
@@ -509,6 +512,15 @@ if(empty($conteneurs)) {
     const alertBox = document.getElementById('alertPaiementColis');
     if (!form.reportValidity()) return;
 
+    const montant = Number(document.getElementById('paiement_montant').value);
+    const totalApresPaiement = Math.round(
+      (Number(form.dataset.totalPaiements || 0) + montant) * 100
+    );
+    const montantExpedition = Math.round(Number(form.dataset.montantExpedition || 0) * 100);
+    const retraitAutomatique = form.dataset.retraitAutomatique === '1'
+      && totalApresPaiement === montantExpedition;
+    const fenetreRecu = retraitAutomatique ? window.open('', '_blank') : null;
+
     bouton.disabled = true;
     bouton.textContent = 'Enregistrement...';
     fetch(form.action, {
@@ -529,11 +541,22 @@ if(empty($conteneurs)) {
         });
       })
       .then(function (data) {
+        if (data.receipt_url) {
+          if (fenetreRecu) {
+            fenetreRecu.location.href = data.receipt_url;
+          } else {
+            window.location.href = data.receipt_url;
+            return;
+          }
+        } else if (fenetreRecu) {
+          fenetreRecu.close();
+        }
         bootstrap.Modal.getOrCreateInstance(document.getElementById('modalPaiementColis')).hide();
-        alert(data.message);
+        if (!data.receipt_url) alert(data.message);
         window.location.reload();
       })
       .catch(function (erreur) {
+        if (fenetreRecu) fenetreRecu.close();
         alertBox.textContent = erreur.message;
         alertBox.className = 'alert alert-danger';
       })
