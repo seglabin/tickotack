@@ -223,6 +223,12 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/transfert/{id}/recu', 'App\\Http\\Controllers\\ImpressionController@recuTransfert')->name('transfert.recu');
     // Route::get('/transfert/{id}/recu', 'App\\Http\\Controllers\\TransfertController@recu')->name('transfert.recu');
 
+    //-------------------Etats----------------
+    Route::get('/etats/colis', [App\Http\Controllers\EtatController::class, 'colis'])->name('etats.colis');
+    Route::get('/etats/paiements', [App\Http\Controllers\EtatController::class, 'paiements'])->name('etats.paiements');
+    Route::get('/etats/transferts', [App\Http\Controllers\EtatController::class, 'transferts'])->name('etats.transferts');
+    Route::get('/etats/depenses', [App\Http\Controllers\EtatController::class, 'depenses'])->name('etats.depenses');
+    Route::get('/etats/recettes', [App\Http\Controllers\EtatController::class, 'recettes'])->name('etats.recettes');
 
     //-------------------expeditions----------------
     Route::get('/expedition', 'App\Http\Controllers\ExpeditionController@index')->name('expedition');

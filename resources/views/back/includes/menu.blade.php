@@ -48,6 +48,34 @@
                         						</ul>
                         					</li>
                         					@endif
+                                                @if(is_array($menusUser) && (
+                                                    in_array(3, $menusUser) ||
+                                                    in_array(4, $menusUser) ||
+                                                    in_array(5, $menusUser) ||
+                                                    in_array(6, $menusUser) ||
+                                                    in_array(36, $menusUser)
+                                                ))
+                                                <li class="{{ $config === 'etats' ? 'active' : '' }} menu-item-has-children">
+                                                    <a href="#">États</a>
+                                                    <ul class="sub-menu">
+                                                        @if(in_array(4, $menusUser) || in_array(5, $menusUser))
+                                                        <li class="{{ request()->routeIs('etats.colis') ? 'active' : '' }}"><a href="{{ route('etats.colis') }}">Liste des colis</a></li>
+                                                        @endif
+                                                        @if(in_array(4, $menusUser))
+                                                        <li class="{{ request()->routeIs('etats.paiements') ? 'active' : '' }}"><a href="{{ route('etats.paiements') }}">Liste des paiements</a></li>
+                                                        @endif
+                                                        @if(in_array(6, $menusUser))
+                                                        <li class="{{ request()->routeIs('etats.transferts') ? 'active' : '' }}"><a href="{{ route('etats.transferts') }}">Liste des transferts</a></li>
+                                                        @endif
+                                                        @if(in_array(3, $menusUser))
+                                                        <li class="{{ request()->routeIs('etats.depenses') ? 'active' : '' }}"><a href="{{ route('etats.depenses') }}">Liste des dépenses</a></li>
+                                                        @endif
+                                                        @if(in_array(36, $menusUser))
+                                                        <li class="{{ request()->routeIs('etats.recettes') ? 'active' : '' }}"><a href="{{ route('etats.recettes') }}">Liste des autres recettes</a></li>
+                                                        @endif
+                                                    </ul>
+                                                </li>
+                                                @endif
                         					@if(is_array($menusUser) && in_array(7, $menusUser))
                         					<li class=" {{ in_array(session('config'), $tparam) ? 'active' : '' }}  menu-item-has-children">
                         						<a href="#">Paramètres</a>
