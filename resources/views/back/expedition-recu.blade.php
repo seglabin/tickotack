@@ -182,7 +182,17 @@
         }
     </style>
 </head>
-
+@php
+$logoPath = public_path('assets/images/entete.png');
+$logoSource = 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath));
+$photoPath = $expedition->carte_recepteur
+    ? public_path('storage/images/Acteurs/' . $expedition->carte_recepteur)
+    : null;
+$photoInfo = $photoPath && is_file($photoPath) ? getimagesize($photoPath) : false;
+$photoSource = $photoInfo
+    ? 'data:' . $photoInfo['mime'] . ';base64,' . base64_encode(file_get_contents($photoPath))
+    : null;
+@endphp
 <body>
     <table class="receipt-sheet">
         <tr>
@@ -190,7 +200,7 @@
             <td class="receipt">
                 <table class="receipt-header">
                     <tr>
-                        <td><img class="logo" src="{{ public_path('assets/images/entete.png') }}" alt="Global Vision"></td>
+                        <td><img class="logo" src="{{ $logoSource }}" alt="Global Vision"></td>
                     </tr>
                 </table>
 
@@ -243,8 +253,8 @@
                                     </tr>
                                     <tr>
                                         <td >
-                                            @if($expedition->carte_recepteur && file_exists(public_path('storage/images/Acteurs/' . $expedition->carte_recepteur)))
-                                            <img class="receiver-card" src="{{ public_path('storage/images/Acteurs/' . $expedition->carte_recepteur) }}" alt="Carte du récepteur">
+                                            @if($photoSource)
+                                            <img class="receiver-card" src="{{ $photoSource }}" alt="Carte du récepteur">
                                             @endif
                                         </td>
                                     </tr>

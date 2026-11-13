@@ -219,7 +219,15 @@ $locationDate = ($transfert->villedepart ?: '-') . ' le ' .
 ($transfert->datepayement ? date('d/m/Y H:i', strtotime($transfert->datepayement)) : date('d/m/Y H:i'));
 $agent = Auth::user();
 @endphp
-
+@php
+$logoFile = public_path($logoPath);
+$logoSource = 'data:image/png;base64,' . base64_encode(file_get_contents($logoFile));
+$photoFile = $photoPath ? public_path($photoPath) : null;
+$photoInfo = $photoFile && is_file($photoFile) ? getimagesize($photoFile) : false;
+$photoSource = $photoInfo
+? 'data:' . $photoInfo['mime'] . ';base64,' . base64_encode(file_get_contents($photoFile))
+: null;
+@endphp
 <body>
     <table class="receipt-sheet">
         <tr>
@@ -227,7 +235,7 @@ $agent = Auth::user();
             <td class="receipt">
                 <table class="receipt-header">
                     <tr>
-                        <td><img class="logo" src="{{ public_path($logoPath) }}" alt="Global Vision"></td>
+                        <td><img class="logo" src="{{ $logoSource }}" alt="Global Vision"></td>
                         <!-- <td class="location"</td> -->
                     </tr>
                 </table>
@@ -299,8 +307,8 @@ $agent = Auth::user();
                         <td>
                             <div class="signer">{{ $nomSignataire }}</div>
                             <div class="card-frame">
-                                @if($photoPath && file_exists(public_path($photoPath)))
-                                <img class="card" src="{{ public_path($photoPath) }}" alt="Pièce d'identité">
+                                @if($photoSource)
+                                <img class="card" src="{{ $photoSource }}" alt="Pièce d'identité">
                                 @else
                                 <span class="label">Carte non disponible</span>
                                 @endif

@@ -119,10 +119,48 @@ class PaymentcoliTest extends TestCase
             'datetat' => '2026-10-19',
         ]);
 
+        DB::table('acteurs')
+            ->where('id', DB::table('expeditions')->where('id', $expeditionId)->value('idrecepteur'))
+            ->update(['carte' => 'CARTE_ACT_6ac3a9371585f6ac3a93715863.jpg']);
+
         $this->get($receiptUrl)
             ->assertOk()
             ->assertSee('window.print()', false)
+            ->assertSee('data:image/png;base64,', false)
+            ->assertSee('data:image/jpeg;base64,', false)
             ->assertSee('Montant payé : 100 CFA');
+
+        $this->get(route('expedition.recu-retrait', $expeditionId))
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf');
+    }
+
+    public function test_transfer_receipt_embeds_logo_and_receiver_card_in_the_pdf(): void
+    {
+        $transfert = (object) [
+            'iddepart' => 1,
+            'iddestination' => 2,
+            'code' => 'TRANSFERT-TEST',
+            'montpaye' => 100,
+            'montretrait' => 100,
+            'montdepot' => 100,
+            'datepayement' => '2026-10-19 11:00:00',
+            'expediteur' => 'Expéditeur test',
+            'recepteur' => 'Récepteur test',
+            'carte_recepteur' => 'CARTE_ACT_6ac3a9371585f6ac3a93715863.jpg',
+            'cartexpediteur' => null,
+            'villedepart' => 'Départ test',
+        ];
+        $donnees = ['transfert' => $transfert, 'module' => 'recuretrait'];
+        $html = view('back.transfert-recu', $donnees)->render();
+
+        $this->assertStringContainsString('data:image/png;base64,', $html);
+        $this->assertStringContainsString('data:image/jpeg;base64,', $html);
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('back.transfert-recu', $donnees)
+            ->setPaper('A4', 'landscape')
+            ->output();
+        $this->assertStringStartsWith('%PDF-', $pdf);
     }
 
     public function test_full_payment_before_arrival_does_not_register_withdrawal_or_return_receipt(): void
