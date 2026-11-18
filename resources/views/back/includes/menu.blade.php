@@ -16,7 +16,7 @@
                         			<div class="tgmenu__navbar-wrap tgmenu__main-menu d-none d-lg-flex">
                         				<ul class="navigation">
                                                 @if((int) (auth()->user()->idrole ?? 0) === 1)
-                                                <li class="{{ request()->routeIs('admin.historique-actions') ? 'active' : '' }}"><a href="{{ route('admin.historique-actions') }}">Historique des actions</a></li>
+                                                <li class="{{ request()->routeIs('admin.historique-actions') ? 'active' : '' }}"><a href="{{ route('admin.historique-actions') }}">Historique actions</a></li>
                                                 @endif
                         					@if(is_array($menusUser) && in_array(1, $menusUser))
                         					<li class=" {{ in_array(session('config'), $toperation) ? 'active' : '' }}  menu-item-has-children">
