@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-         Schema::table('articles', function (Blueprint $table) {
-            $table->boolean('actualite')->default(false)->after('lot');            
+        Schema::table('articles', function (Blueprint $table) {
+            $table->boolean('actualite')->default(false)->after('lot');
         });
     }
 

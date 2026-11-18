@@ -86,11 +86,12 @@ class EtatController extends Controller
 
     public function transferts(Request $request)
     {
-        $filters = $this->validatedFilters($request);
+        $filters = $this->validatedFilters($request, ['statut', 'trajet']);
         $query = DB::table('transferts as t')
             ->leftJoin('acteurs as exp', 'exp.id', '=', 't.idexpediteur')
             ->leftJoin('adresses as dep', 'dep.id', '=', 't.iddepart')
             ->leftJoin('adresses as dest', 'dest.id', '=', 't.iddestination')
+            ->leftJoin('elements as et', 'et.id', '=', 't.idetat')
             ->select(
                 't.id',
                 't.code',
@@ -99,14 +100,42 @@ class EtatController extends Controller
                 't.montretrait',
                 'exp.nom as expediteur',
                 'dep.libelle as villedepart',
-                'dest.libelle as villedestination'
+                'dest.libelle as villedestination',
+                'et.libelle as statut'
             );
 
         $this->restrictTransferts($query);
         $this->applyPeriod($query, 't.datetransfert', $filters);
+        if (! empty($filters['statut'])) {
+            $query->where('t.idetat', $filters['statut']);
+        }
+        if (! empty($filters['trajet'])) {
+            [$iddepart, $iddestination] = explode('-', $filters['trajet'], 2);
+            $query->where('t.iddepart', (int) $iddepart)
+                ->where('t.iddestination', (int) $iddestination);
+        }
         $donnees = $query->orderByDesc('t.datetransfert')->get();
 
-        return $this->renderReport('transferts', 'Liste des transferts', $donnees, $filters);
+        $statuts = DB::table('transferts as t')
+            ->leftJoin('elements as et', 'et.id', '=', 't.idetat')
+            ->select('et.id', 'et.libelle')
+            ->whereNotNull('et.id');
+        $this->restrictTransferts($statuts);
+        $statuts = $statuts->distinct()->orderBy('et.libelle')->get();
+
+        $trajets = DB::table('transferts as t')
+            ->leftJoin('adresses as dep', 'dep.id', '=', 't.iddepart')
+            ->leftJoin('adresses as dest', 'dest.id', '=', 't.iddestination')
+            ->select(
+                't.iddepart',
+                't.iddestination',
+                DB::raw("CONCAT(t.iddepart, '-', t.iddestination) as valeur"),
+                DB::raw("CONCAT(dep.libelle, ' - ', dest.libelle) as libelle")
+            );
+        $this->restrictTransferts($trajets);
+        $trajets = $trajets->distinct()->orderByRaw("CONCAT(dep.libelle, ' - ', dest.libelle)")->get();
+
+        return $this->renderReport('transferts', 'Liste des transferts', $donnees, $filters, compact('statuts', 'trajets'));
     }
 
     public function depenses(Request $request)
@@ -155,6 +184,9 @@ class EtatController extends Controller
         }
         if (in_array('colis', $extra, true)) {
             $rules['colis'] = ['nullable', 'integer', 'exists:expeditions,id'];
+        }
+        if (in_array('trajet', $extra, true)) {
+            $rules['trajet'] = ['nullable', 'regex:/^\d+-\d+$/'];
         }
 
         return $request->validate($rules);

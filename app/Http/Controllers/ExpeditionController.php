@@ -215,7 +215,9 @@ class ExpeditionController extends Controller
                 // dd($request->montant);
                 $e->code             = $request->code;
                 $e->datenreg         = $request->datenreg;
-                $e->montant          = (float) sansespace($request->montant);
+                $e->montantcolis     = (float) sansespace($request->input('montantcolis', 0));
+                $e->autrecharge      = (float) sansespace($request->input('autrecharge', 0));
+                $e->montant          = $e->montantcolis + $e->autrecharge;
                 $e->marque           = $request->marque;
                 $e->poids            = (float) sansespace($request->poids);
                 $e->nbrcolis         = (int) sansespace($request->nbrcolis);

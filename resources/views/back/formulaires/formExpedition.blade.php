@@ -64,8 +64,8 @@
                         <label for="poids" class="lelabel">CBM (*)</label>
                         <div class="d-flex align-items-center" style="gap: 6px;">
                             <div style="flex-grow: 1;">
-                                <input type="text" class="form-control" id="poidsB" name="poidsB"
-                                    onkeyup="typenumerique(this);" onchange="actualiserTarifAutomatique()"
+                                <input type="number" class="form-control" id="poidsB" name="poidsB"
+                                    min="0" step="any" oninput="changePoidesB();"
                                     placeholder="Ex : 100 000"
                                     value="{{ ($a != null) ? $a->poids : null }}">
                             </div>
@@ -99,8 +99,8 @@
                 <div class="card-body">
                     <div class="form-group">
                         <label for="poids" class="lelabel">Unité de mesure (*)</label>
-                        <input type="text" class="form-control" id="poidsA" name="poidsA"
-                            onkeyup="typenumerique(this);" onchange="changePoidesA();"
+                        <input type="number" class="form-control" id="poidsA" name="poidsA"
+                            min="0" step="any" oninput="changePoidesA();"
                             placeholder="Ex : 100 000"
                             value="{{ ($a != null) ? $a->poids : null }}">
                     </div>
@@ -210,14 +210,27 @@
     <div class="col-md-3">
         <div class="card-body">
             <div class="form-group">
-                <label for="montant" class="lelabel">Montant (*)</label>
-                <input type="text" class="form-control" id="montant" name="montant"
-                    onkeyup="typemontant(this);"
+                <label for="montantcolis" class="lelabel">Montant colis (*)</label>
+                <input type="number" class="form-control" id="montantcolis" name="montantcolis"
+                    min="0" step="0.01"
                     placeholder="Ex : 100 000"
-                    value="{{ ($a != null) ? $a->montant : null }}" readonly>
+                    value="{{ ($a != null) ? ($a->montantcolis ?? $a->montant) : null }}" readonly>
                     </div>
             </div>
         </div>
+        <div class="col-md-3">
+            <div class="card-body">
+                <div class="form-group">
+                    <label for="autrecharge" class="lelabel">Autre charge</label>
+                    <input type="number" class="form-control" id="autrecharge" name="autrecharge"
+                        min="0" step="0.01" oninput="actualiserMontantTotal();"
+                        placeholder="Ex : 100 000"
+                        value="{{ ($a != null) ? ($a->autrecharge ?? 0) : 0 }}">
+                </div>
+            </div>
+        </div>
+        <input type="hidden" id="montant" name="montant"
+            value="{{ ($a != null) ? $a->montant : 0 }}">
 
         <!-- Description & Observation -->
         <div class="col-md-6">
@@ -439,7 +452,7 @@
             const iddepartEl = document.getElementById('iddepart');
             const iddestinationEl = document.getElementById('iddestination');
             const poidsEl = document.getElementById('poids');
-            const champTarif = document.getElementById('montant');
+            const champTarif = document.getElementById('montantcolis');
 
             const typcolis = typcolisEl ? typcolisEl.value : '0';
             const typenvoi = typenvoiEl ? typenvoiEl.value : '0';
@@ -453,7 +466,7 @@
                 const cle = typcolis + '_' + typenvoi + '_' + typemoyen + '_' + iddepart + '_' + iddestination; //+ '_' + poids;
                 let tarif = rechercheTarifExpoedition(tarifGrille, cle);
                 if (tarif != null) {
-                    champTarif.value = (tarif * poids);
+                    champTarif.value = (tarif * poids).toFixed(2);
                 } else {
                     champTarif.value = 0;
                     alert("Aucun tarif n'est défini pour cette expédition ");
@@ -463,6 +476,13 @@
                 champTarif.value = 0;
 
             }
+            actualiserMontantTotal();
+        }
+
+        function actualiserMontantTotal() {
+            const montantColis = Number(document.getElementById('montantcolis')?.value) || 0;
+            const autreCharge = Number(document.getElementById('autrecharge')?.value) || 0;
+            document.getElementById('montant').value = (montantColis + autreCharge).toFixed(2);
         }
 
         function controlerTrajetExpedition(champModifie) {
@@ -585,6 +605,12 @@
         function changePoidesA() {
             const poidsA = parseFloat((document.getElementById('poidsA')?.value || '').replace(/\s/g, '').replace(',', '.')) || 0;
             document.getElementById('poids').value = poidsA; // Mettre à jour le champ caché "poids"
+            actualiserTarifAutomatique();
+        }
+
+        function changePoidesB() {
+            const poidsB = parseFloat((document.getElementById('poidsB')?.value || '').replace(/\s/g, '').replace(',', '.')) || 0;
+            document.getElementById('poids').value = poidsB;
             actualiserTarifAutomatique();
         }
 
