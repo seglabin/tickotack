@@ -55,6 +55,30 @@ class ConteneurNumeroTest extends TestCase
             'created_at' => $now,
             'updated_at' => $now,
         ]);
+        $typeColisId = DB::table('elements')->insertGetId([
+            'libelle' => 'Colis test',
+            'nomtable' => 'typecolis',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+        $expediteurId = DB::table('acteurs')->insertGetId([
+            'nom' => 'Expéditeur test',
+            'tel' => '0000000000',
+            'whatsap' => '0000000000',
+            'marque' => '',
+            'carte' => '',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+        $recepteurId = DB::table('acteurs')->insertGetId([
+            'nom' => 'Récepteur test',
+            'tel' => '0000000000',
+            'whatsap' => '0000000000',
+            'marque' => '',
+            'carte' => '',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
         $addressId = DB::table('adresses')->insertGetId([
             'libelle' => 'Cotonou',
             'pays' => 'Bénin',
@@ -81,7 +105,9 @@ class ConteneurNumeroTest extends TestCase
             ->assertOk()
             ->assertJsonPath('numconteneur', 'NOR-' . $now->format('y/m') . 'B01');
 
-        $this->post('/enregistrer-conteneur', [
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        $response = $this->post('/enregistrer-conteneur', [
             'idtypenvoi' => $typeId,
             'idmoyentransport' => $transportId,
             'iddepart' => $addressId,
@@ -90,12 +116,31 @@ class ConteneurNumeroTest extends TestCase
             'typeconteneur' => 'STANDARD',
             'lienconteneur' => 'https://example.test/conteneur',
             'idconsignataire' => $consignataireId,
-        ])->assertRedirect(route('conteneur'));
+        ]);
+        $queries = DB::getQueryLog();
+        DB::disableQueryLog();
+
+        $response->assertRedirect(route('conteneur'));
+        $this->assertFalse(collect($queries)->contains(
+            static fn (array $query) => preg_match('/\bIN\s*\(\s*\)/i', $query['query']) === 1
+        ));
         $firstId = DB::table('conteneurs')->value('id');
         $this->assertDatabaseHas('conteneurs', [
             'id' => $firstId,
             'numconteneur' => 'NOR-' . $now->format('y/m') . 'B01',
         ]);
+
+        DB::table('conteneurs')->where('id', $firstId)->update([
+            'numconteneur' => 'REFERENCE-CUSTOM-01',
+        ]);
+        $this->getJson(route('conteneur.numero-suggere', [
+            'idtypenvoi' => $typeId,
+            'idmoyentransport' => $transportId,
+            'datedepart' => $dateDepart,
+            'idenreg' => $firstId,
+        ]))
+            ->assertOk()
+            ->assertJsonPath('numconteneur', 'REFERENCE-CUSTOM-01');
 
         $this->getJson(route('conteneur.numero-suggere', [
             'idtypenvoi' => $typeId,
@@ -120,6 +165,58 @@ class ConteneurNumeroTest extends TestCase
             'idenreg' => $firstId,
         ]))
             ->assertOk()
-            ->assertJsonPath('numconteneur', 'NOR-' . $now->format('y/m') . 'B01');
+            ->assertJsonPath('numconteneur', 'REFERENCE-CUSTOM-01');
+
+        $etatEnregistrementId = DB::table('elements')
+            ->where('nomtable', 'etat')
+            ->whereRaw('LOWER(libelle) = ?', ['enregistrement'])
+            ->value('id');
+        $expeditionId = DB::table('expeditions')->insertGetId([
+            'datenreg' => $now,
+            'montant' => 100,
+            'montantpaye' => 0,
+            'montantcolis' => 100,
+            'autrecharge' => 0,
+            'poids' => 1,
+            'nbrcolis' => 1,
+            'code' => 'COLIS-CONTENEUR-TEST',
+            'marque' => 'Test',
+            'idexpediteur' => $expediteurId,
+            'idrecepteur' => $recepteurId,
+            'idtypcolis' => $typeColisId,
+            'idtypenvoi' => $typeId,
+            'idmoyentransport' => $transportId,
+            'iddepart' => $addressId,
+            'iddestination' => $destinationId,
+            'idetat' => $etatEnregistrementId,
+            'idconteneur' => $firstId,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        $this->post('/enregistrer-conteneur', [
+            'idenreg' => $firstId,
+            'idtypenvoi' => $typeId,
+            'idmoyentransport' => $transportId,
+            'iddepart' => $addressId,
+            'iddestination' => $destinationId,
+            'datedepart' => $dateDepart,
+            'typeconteneur' => 'STANDARD',
+            'lienconteneur' => 'https://example.test/conteneur',
+            'idconsignataire' => $consignataireId,
+        ])->assertRedirect(route('conteneur'));
+        $queries = DB::getQueryLog();
+        DB::disableQueryLog();
+
+        $this->assertFalse(collect($queries)->contains(
+            static fn (array $query) => preg_match('/\bIN\s*\(\s*\)/i', $query['query']) === 1
+        ));
+        $this->assertDatabaseHas('expeditions', [
+            'id' => $expeditionId,
+            'idconteneur' => null,
+            'idetat' => $etatEnregistrementId,
+        ]);
     }
 }

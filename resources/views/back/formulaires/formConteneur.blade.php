@@ -2,7 +2,7 @@
 @php 
   //$caissesAdresses = $caisses->pluck('idadresse', 'id')->toArray();
 //$iddepart = $caissesAdresses[$idcaisse] ?? (($a != null) ? $a->iddepart : '');
-
+//dd($a);
 @endphp
 <div class="row" id="conteneurForm" data-conteneur-id="{{ $id ?: '' }}" data-normal-type-id="{{ $normalTypeId }}" data-expeditions-url="{{ route('conteneur.expeditions-disponibles') }}" data-numero-url="{{ route('conteneur.numero-suggere') }}">
     <input type="hidden" name="expedition_ids_present" value="1">
@@ -35,7 +35,8 @@
             </div>
         </div>
     </div>
-
+@php //dd(request('numconteneur', old('numconteneur', $a?->numconteneur)))
+//dd(request('numconteneur')); @endphp
     <div class="col-md-3">
         <div class="card-body">
             <div class="form-group">

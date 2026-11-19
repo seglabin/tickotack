@@ -36,11 +36,25 @@ class ConteneurController extends Controller
         $type = element::where('nomtable', 'typenvoi')->findOrFail($typeId);
         $transport = element::where('nomtable', 'moyentransport')->findOrFail($transportId);
         $dateDepart = Carbon::parse($date);
+
+        if ($ignoreId) {
+            $conteneurExistant = conteneur::find($ignoreId);
+            if ($conteneurExistant
+                && (int) $conteneurExistant->idtypenvoi === $typeId
+                && (int) $conteneurExistant->idmoyentransport === $transportId
+                && $conteneurExistant->datedepart
+                && ($datedepartExistant = Carbon::parse($conteneurExistant->datedepart))->year === $dateDepart->year
+                && $datedepartExistant->month === $dateDepart->month
+            ) {
+                return $conteneurExistant->numconteneur;
+            }
+        }
+
         $nombreConteneurs = conteneur::where('idtypenvoi', $typeId)
             ->where('idmoyentransport', $transportId)
             ->whereYear('datedepart', $dateDepart->year)
             ->whereMonth('datedepart', $dateDepart->month)
-            ->when($ignoreId, fn ($query) => $query->where('id', '!=', $ignoreId))
+            ->when($ignoreId, fn($query) => $query->where('id', '!=', $ignoreId))
             ->count();
 
         $typePrefix = mb_strtoupper(mb_substr(trim($type->libelle), 0, 3));
@@ -340,93 +354,72 @@ class ConteneurController extends Controller
                 $e->iduser = Auth::id();
             }
 
-
             $e->idtypenvoi = $validated['idtypenvoi'];
             $e->idmoyentransport = $validated['idmoyentransport'];
             $e->iddepart = $validated['iddepart'];
             $e->iddestination = $validated['iddestination'];
-            if ($e->save()) {
-                //suppression des expeditions qui ne sont plus selectionnées et rattachement des nouvelles expeditions selectionnées
-                $rek = " UPDATE expeditions SET idconteneur = NULL, idetat = (SELECT id FROM elements WHERE nomtable = 'etat' AND LOWER(libelle) = 'enregistrement') WHERE idconteneur = ? AND id NOT IN (" . implode(',', array_map('intval', $validated['expedition_ids'] ?? [])) . ") ";
-                //Execute the update query to detach expeditions that are no longer selected
-                DB::update($rek, [$e->id]);
-                $rek = " UPDATE expeditions SET idconteneur = ?, idetat = (SELECT id FROM elements WHERE nomtable = 'etat' AND LOWER(libelle) = 'rattaché') WHERE id IN (" . implode(',', array_map('intval', $validated['expedition_ids'] ?? [])) . ") ";
-                //Execute the update query to attach new selected expeditions
-                DB::update($rek, [$e->id]);
+            $expeditionIds = array_values(array_unique(array_map(
+                'intval',
+                $validated['expedition_ids'] ?? []
+            )));
 
-                /*
+            DB::transaction(function () use ($e, $expeditionIds): void {
+                $etatEnregistrement = element::where('nomtable', 'etat')
+                    ->whereRaw('LOWER(libelle) = ?', ['enregistrement'])
+                    ->first();
+                if (!$etatEnregistrement) {
+                    $etatEnregistrement = element::create([
+                        'nomtable' => 'etat',
+                        'libelle' => 'Enregistrement',
+                    ]);
+                }
 
-                DB::transaction(function () use ($e, $validated) {
-                    $ancienExpeditionIds = DB::table('expeditions')
-                        ->where('idconteneur', $e->id)
-                        ->pluck('id')
-                        ->all();
+                $e->saveOrFail();
 
+                $expeditionsADetacher = DB::table('expeditions')
+                    ->where('idconteneur', $e->id);
+                if ($expeditionIds) {
+                    $expeditionsADetacher->whereNotIn('id', $expeditionIds);
+                }
+                $expeditionsADetacher->update([
+                    'idconteneur' => null,
+                    'idetat' => $etatEnregistrement->id,
+                    'updated_at' => now(),
+                ]);
 
-                    $etatEnregistrement = element::where('nomtable', 'etat')
-                        ->whereRaw('LOWER(libelle) = ?', ['enregistrement'])
-                        ->first();
-                    if (!$etatEnregistrement) {
-                        $etatEnregistrement = element::create([
-                            'nomtable' => 'etat',
-                            'libelle' => 'Enregistrement',
-                        ]);
-                    }
+                if (!$expeditionIds) {
+                    return;
+                }
 
-                    $selectionDemandee = array_values(array_unique(array_map(
-                        'intval',
-                        $validated['expedition_ids'] ?? []
-                    )));
-                    $expeditionIdsValides = DB::table('expeditions')
-                        ->whereIn('id', $selectionDemandee)
-                        ->where('idmoyentransport', $validated['idmoyentransport'])
-                        ->where('idtypenvoi', $validated['idtypenvoi'])
-                        ->where('iddepart', $validated['iddepart'])
-                        ->where('iddestination', $validated['iddestination'])
-                        ->where(function ($query) use ($etatEnregistrement, $e) {
-                            $query->where('idetat', $etatEnregistrement->id)
-                                ->orWhere('idconteneur', $e->id);
-                        })
-                        ->pluck('id')
-                        ->all();
+                $etatRattache = element::where('nomtable', 'etat')
+                    ->whereRaw('LOWER(libelle) = ?', ['rattaché'])
+                    ->first();
+                if (!$etatRattache) {
+                    $etatRattache = element::create([
+                        'nomtable' => 'etat',
+                        'libelle' => 'Rattaché',
+                    ]);
+                }
 
-                    $expeditionsADetacher = array_diff($ancienExpeditionIds, $expeditionIdsValides);
-                    if ($expeditionsADetacher) {
-                        DB::table('expeditions')
-                            ->whereIn('id', $expeditionsADetacher)
-                            ->update([
-                                'idconteneur' => null,
-                                'idetat' => $etatEnregistrement->id,
-                            ]);
-                    }
-
-                    if ($expeditionIdsValides) {
-                        $etatRattache = element::firstOrCreate([
-                            'nomtable' => 'etat',
-                            'libelle' => 'Rattaché',
-                        ]);
-
-                        DB::table('expeditions')
-                            ->whereIn('id', $expeditionIdsValides)
-                            ->update([
-                                'idconteneur' => $e->id,
-                                'idetat' => $etatRattache->id,
-                            ]);
-                    }
-
-                    // $e->poidstotal = DB::table('expeditions')
-                    //     ->where('idconteneur', $e->id)
-                    //     ->sum('poids');
-                    // $e->save();
-                }); */
-            }
+                DB::table('expeditions')
+                    ->whereIn('id', $expeditionIds)
+                    ->update([
+                        'idconteneur' => $e->id,
+                        'idetat' => $etatRattache->id,
+                        'updated_at' => now(),
+                    ]);
+            });
 
             return redirect()->route('conteneur');
         } catch (\Illuminate\Validation\ValidationException $e) {
             throw $e;
         } catch (\Exception $e) {
-            dd($e);
-            return redirect()->route('conteneur')->with('error', 'Erreur d\'enregistrement : ' . $e->getMessage());
+            report($e);
+
+            return redirect()->route('conteneur')->with(
+                'error',
+                'Erreur lors de l’enregistrement du conteneur. Aucune modification partielle n’a été conservée.'
+            );
         }
     }
 
@@ -441,8 +434,8 @@ class ConteneurController extends Controller
                 ]);
             }
             $e = conteneur::findOrFail($id);
-                $e->delete();
-                dd($e);
+            $e->delete();
+            dd($e);
             //conteneur::findOrFail($id)->delete();
             return redirect()->route('conteneur');
         } catch (\Exception $e) {
