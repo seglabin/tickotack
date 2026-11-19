@@ -240,7 +240,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/ajout-expedition', 'App\Http\Controllers\ExpeditionController@form');
     Route::get('/modifier-expedition/{id}', 'App\Http\Controllers\ExpeditionController@formModif');
     Route::post('/enregistrer-expedition', 'App\Http\Controllers\ExpeditionController@enregistrer');
-    Route::get('/supprimer-expedition/{id}', 'App\Http\Controllers\ExpeditionController@supprimer');
+    Route::get('/supprimer-expedition/{id}', 'App\Http\Controllers\ExpeditionController@supprimer')->name('expedition.supprimer');
     Route::post('/enregistrer-histoexpedition', 'App\Http\Controllers\HistoexpeditionController@enregistrer');
     Route::post('/enregistrer-histoconteneur', 'App\Http\Controllers\HistoconteneurController@enregistrer');
 

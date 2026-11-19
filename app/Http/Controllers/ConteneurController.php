@@ -432,18 +432,21 @@ class ConteneurController extends Controller
 
     public function supprimer($id)
     {
-        try {
+        try { //dd($id);
             $utilise = DB::table('expeditions')->where('idconteneur', $id)->exists();
             if ($utilise) {
                 return view('alertDoublon', [
-                    'info' => 'Ce conteneur est lié à une expédition. Vous ne pouvez pas le supprimer.',
+                    'info' => 'Cette expédition est liée à aumoins un colis. Vous ne pouvez pas le supprimer.',
                     'titre' => 'CONTRAINTE D\'INTEGRITE',
                 ]);
             }
-
-            conteneur::findOrFail($id)->delete();
+            $e = conteneur::findOrFail($id);
+                $e->delete();
+                dd($e);
+            //conteneur::findOrFail($id)->delete();
             return redirect()->route('conteneur');
         } catch (\Exception $e) {
+            dd($e);
             return redirect()->route('conteneur')->with('error', 'Erreur de suppression : ' . $e->getMessage());
         }
     }

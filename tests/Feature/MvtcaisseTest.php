@@ -193,8 +193,8 @@ class MvtcaisseTest extends TestCase
             ->value('id');
         $liste->assertSee('modifier-mvtcaisse/' . $mouvementId)
             ->assertDontSee('modifier-mvtcaisse/' . $transactionRecueId)
-            ->assertSee("supprimer('supprimer-mvtcaisse','" . $mouvementId . "')", false)
-            ->assertDontSee("supprimer('supprimer-mvtcaisse','" . $transactionRecueId . "')", false);
+            ->assertSee('href="' . url('supprimer-mvtcaisse/' . $mouvementId) . '"', false)
+            ->assertDontSee('href="' . url('supprimer-mvtcaisse/' . $transactionRecueId) . '"', false);
 
         $this->get('/modifier-mvtcaisse/' . $transactionRecueId)->assertForbidden();
         $this->post('/enregistrer-mvtcaisse', [

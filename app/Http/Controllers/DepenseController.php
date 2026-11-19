@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use App\Models\depense;
 use App\Models\element;
@@ -118,7 +119,7 @@ $cond = ($idrole != 1)? " WHERE d.iduser = '".$iduser."' ": "";
                 $rk = "SELECT id FROM operationfinancieres WHERE idcaisse = '".$request->idcaisse."' AND libsrce = 'depenses' AND idsrce = '".$e->id."'";
                 $idop = infoParRekete($rk, 'id');
                 
-                enregistreOperationFinanciere('SORTIE', sansespace($request->montantdepense), $e->id, 'depenses', $request->idcaisse, $idop);
+                enregistreOperationFinanciere('Sortie', sansespace($request->montantdepense), $e->id, 'depenses', $request->idcaisse, $idop);
                 
                 return redirect()->route('depense');
                }else{
@@ -141,21 +142,61 @@ $cond = ($idrole != 1)? " WHERE d.iduser = '".$iduser."' ": "";
         $this->authorizeRecordOwner($depense);
 
         try {
-            $hasTransferts = DB::table('transferts')
-                ->where('idexpediteur', $id)
-                ->orWhere('idrecepteur', $id)
-                ->exists();
+            DB::transaction(function () use ($id) {
+                $depense = depense::whereKey($id)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+                $caisseIds = DB::table('operationfinancieres')
+                    ->where('libsrce', 'depenses')
+                    ->where('idsrce', $depense->id)
+                    ->pluck('idcaisse')
+                    ->push($depense->idcaisse)
+                    ->map(static fn ($caisseId) => (int) $caisseId)
+                    ->unique()
+                    ->sort()
+                    ->values();
 
-            if (!$hasTransferts) {
-                $depense->delete();
-                return redirect()->route('depense');
-            } else {
-                $info = "Cette dépense est liée à au moins un transfert.\nVous ne pouvez pas la supprimer.";
-                $titre = "CONTRAINTE D'INTEGRITE";
-                return view('alertDoublon', compact('info', 'titre'));
-            }
-        } catch (\Exception $e) {
-            return redirect()->route('depense')->with('error', 'Erreur de suppression : ' . $e->getMessage());
+                foreach ($caisseIds as $caisseId) {
+                    caisse::whereKey($caisseId)->lockForUpdate()->firstOrFail();
+                }
+
+                DB::table('operationfinancieres')
+                    ->where('libsrce', 'depenses')
+                    ->where('idsrce', $depense->id)
+                    ->delete();
+
+                if (! $depense->delete()) {
+                    throw new \RuntimeException('La suppression de la dépense a échoué.');
+                }
+
+                foreach ($caisseIds as $caisseId) {
+                    DB::table('caisses')
+                        ->where('id', $caisseId)
+                        ->update([
+                            'montant' => soldeCaisse($caisseId),
+                            'updated_at' => now(),
+                        ]);
+                }
+            });
+
+            return redirect()->route('depense')->with(
+                'success',
+                'Dépense supprimée et solde de caisse régularisé.'
+            );
+        } catch (QueryException $e) {
+            report($e);
+
+            return redirect()->route('depense')->with(
+                'error',
+                'Suppression impossible : les écritures financières n’ont pas pu être régularisées. Aucune modification n’a été conservée.'
+            );
+        } catch (\Throwable $e) {
+            report($e);
+
+            return redirect()->route('depense')->with(
+                'error',
+                'Erreur de suppression : aucune modification financière n’a été conservée.'
+            );
         }
     }
 }

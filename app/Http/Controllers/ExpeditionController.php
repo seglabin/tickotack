@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use RuntimeException;
 use App\Models\caisse;
 use App\Models\acteur;
 use App\Models\adresse;
@@ -167,7 +169,7 @@ class ExpeditionController extends Controller
         $tarifDb = tarifexpedition::all();
         $tarifGrille = [];
         foreach ($tarifDb as $tx) {
-            $tarifGrille[][$tx->idtypcolis . '_' . $tx->idtypenvoi . '_' . $tx->idmoyentransport. '_' . $tx->iddepart . '_' . $tx->iddestination] = $tx->prix . '|' . $tx->poids;
+            $tarifGrille[][$tx->idtypcolis . '_' . $tx->idtypenvoi . '_' . $tx->idmoyentransport . '_' . $tx->iddepart . '_' . $tx->iddestination] = $tx->prix . '|' . $tx->poids;
         }
         // dd($tarifGrille,$tarifDb);
         return view('back.formulaire', compact(
@@ -219,6 +221,7 @@ class ExpeditionController extends Controller
                 $e->autrecharge      = (float) sansespace($request->input('autrecharge', 0));
                 $e->montant          = $e->montantcolis + $e->autrecharge;
                 $e->marque           = $request->marque;
+                $e->observations           = $request->observations;
                 $e->poids            = (float) sansespace($request->poids);
                 $e->nbrcolis         = (int) sansespace($request->nbrcolis);
                 $e->iddemarcheur     = ($request->iddemarcheur && $request->iddemarcheur != '0') ? $request->iddemarcheur : null;
@@ -261,18 +264,58 @@ class ExpeditionController extends Controller
     public function supprimer($id)
     {
         try {
-            $e = expedition::findOrFail($id);
 
-            // Supprimer les opérations financières rattachées
-            DB::table('operationfinancieres')
-                ->where('libsrce', 'expeditions')
-                ->where('idsrce', $id)
-                ->delete();
+            $hasPaymentcolis = DB::table('paymentcolis')
+                ->where('idcolis', $id)
+                ->exists();
+            $msg = "";
+            if ($hasPaymentcolis) {
+                $msg .= "Ce colis est lié à au moins un paiement.\n";
+            }
+            if ($msg == "") {
 
-            $e->delete();
-            return redirect()->route('expedition');
-        } catch (\Exception $e) {
-            return redirect()->route('expedition')->with('error', 'Erreur de suppression : ' . $e->getMessage());
+                DB::transaction(function () use ($id) {
+                    $expedition = expedition::whereKey($id)
+                        ->lockForUpdate()
+                        ->firstOrFail();
+
+                    DB::table('operationfinancieres')
+                        ->where('libsrce', 'expeditions')
+                        ->where('idsrce', $id)
+                        ->delete();
+
+                    if (! $expedition->delete()) {
+                        throw new RuntimeException('La suppression de l’expédition a échoué.');
+                    }
+                });
+
+                return redirect()->route('expedition')->with('success', 'L’expédition et ses données liées supprimées avec succès.');
+            } else {
+                $info = $msg . "\n Vous ne pouvez pas supprimer cet expédition.";
+                $titre = "CONTRAINTE D'INTEGRITE";
+                return view('alertDoublon', compact('info', 'titre'));
+            }
+        } catch (QueryException $e) {
+            report($e);
+
+            if (in_array((string) $e->getCode(), ['23000', '23503'], true)) {
+                return redirect()->route('expedition')->with(
+                    'error',
+                    'Suppression impossible : cette expédition est encore référencée par des données liées. Vérifiez ses paiements, son historique et ses opérations financières.'
+                );
+            }
+
+            return redirect()->route('expedition')->with(
+                'error',
+                'Une erreur de base de données a empêché la suppression de l’expédition. Aucune donnée liée n’a été supprimée.'
+            );
+        } catch (\Throwable $e) {
+            report($e);
+
+            return redirect()->route('expedition')->with(
+                'error',
+                'La suppression de l’expédition a échoué. Aucune donnée liée n’a été supprimée.'
+            );
         }
     }
 }

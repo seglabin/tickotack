@@ -1,5 +1,5 @@
 
-function urlApplication(lien) {
+function urlApplication(lien) { //alert(lien);
   const base = document.querySelector('base');
   const baseUrl = base ? base.href : window.location.origin + '/';
 
@@ -320,7 +320,7 @@ function modifier(cas, idenreg) { //alert('M'+ cas + 'M' );
 }
 
 
-function supprimer(cas, idenreg) {
+function supprimer(cas, idenreg) { //alert(cas);
   var rep = confirm("Voulez vous vraiment supprimer cet enregistrement?", okLabel = "oui");
   if (rep) {
     var preloader = document.getElementById('preloader');
@@ -328,8 +328,10 @@ function supprimer(cas, idenreg) {
     document.getElementById('idenreg').value = idenreg;
     document.getElementById('config').value = cas;
     let lien = cas + "/" + idenreg;
+    let act = urlApplication(lien);
+    // alert(act);
     document.forms["myform"].method = 'GET';
-    document.forms["myform"].action = urlApplication(lien);
+    document.forms["myform"].action = act;
     document.forms["myform"].submit();
   }
 }

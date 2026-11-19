@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use App\Models\approcaisse;
 use App\Models\element;
@@ -118,7 +119,7 @@ class ApprocaisseController extends Controller
                 $rk = "SELECT id FROM operationfinancieres WHERE idcaisse = '".$request->idcaisse."' AND libsrce = 'approcaisses' AND idsrce = '".$e->id."'";
                 $idop = infoParRekete($rk, 'id');
                 
-                enregistreOperationFinanciere('ENTREE', sansespace($request->montant), $e->id, 'approcaisses', $request->idcaisse, $idop);
+                enregistreOperationFinanciere('Entree', sansespace($request->montant), $e->id, 'approcaisses', $request->idcaisse, $idop);
                 
                 return redirect()->route('approcaisse');
                }else{
@@ -141,21 +142,61 @@ class ApprocaisseController extends Controller
         $this->authorizeRecordOwner($approvisionnement);
 
         try {
-            $hasTransferts = DB::table('transferts')
-                ->where('idexpediteur', $id)
-                ->orWhere('idrecepteur', $id)
-                ->exists();
+            DB::transaction(function () use ($id) {
+                $approvisionnement = approcaisse::whereKey($id)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+                $caisseIds = DB::table('operationfinancieres')
+                    ->where('libsrce', 'approcaisses')
+                    ->where('idsrce', $approvisionnement->id)
+                    ->pluck('idcaisse')
+                    ->push($approvisionnement->idcaisse)
+                    ->map(static fn ($caisseId) => (int) $caisseId)
+                    ->unique()
+                    ->sort()
+                    ->values();
 
-            if (!$hasTransferts) {
-                $approvisionnement->delete();
-                return redirect()->route('approcaisse');
-            } else {
-                $info = "Cet approvisionnement est lié à au moins un transfert.\nVous ne pouvez pas le supprimer.";
-                $titre = "CONTRAINTE D'INTEGRITE";
-                return view('alertDoublon', compact('info', 'titre'));
-            }
-        } catch (\Exception $e) {
-            return redirect()->route('approcaisse')->with('error', 'Erreur de suppression : ' . $e->getMessage());
+                foreach ($caisseIds as $caisseId) {
+                    caisse::whereKey($caisseId)->lockForUpdate()->firstOrFail();
+                }
+
+                DB::table('operationfinancieres')
+                    ->where('libsrce', 'approcaisses')
+                    ->where('idsrce', $approvisionnement->id)
+                    ->delete();
+
+                if (! $approvisionnement->delete()) {
+                    throw new \RuntimeException('La suppression de l’approvisionnement a échoué.');
+                }
+
+                foreach ($caisseIds as $caisseId) {
+                    DB::table('caisses')
+                        ->where('id', $caisseId)
+                        ->update([
+                            'montant' => soldeCaisse($caisseId),
+                            'updated_at' => now(),
+                        ]);
+                }
+            });
+
+            return redirect()->route('approcaisse')->with(
+                'success',
+                'Approvisionnement supprimé et solde de caisse régularisé.'
+            );
+        } catch (QueryException $e) {
+            report($e);
+
+            return redirect()->route('approcaisse')->with(
+                'error',
+                'Suppression impossible : les écritures financières n’ont pas pu être régularisées. Aucune modification n’a été conservée.'
+            );
+        } catch (\Throwable $e) {
+            report($e);
+
+            return redirect()->route('approcaisse')->with(
+                'error',
+                'Erreur de suppression : aucune modification financière n’a été conservée.'
+            );
         }
     }
 }

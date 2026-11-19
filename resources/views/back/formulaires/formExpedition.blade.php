@@ -207,7 +207,7 @@
 
 
     <!-- Montants -->
-    <div class="col-md-3">
+    <div class="col-md-2">
         <div class="card-body">
             <div class="form-group">
                 <label for="montantcolis" class="lelabel">Montant colis (*)</label>
@@ -218,7 +218,7 @@
                     </div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-2">
             <div class="card-body">
                 <div class="form-group">
                     <label for="autrecharge" class="lelabel">Autre charge</label>
@@ -233,12 +233,23 @@
             value="{{ ($a != null) ? $a->montant : 0 }}">
 
         <!-- Description & Observation -->
-        <div class="col-md-6">
+        <div class="col-md-4">
             <div class="card-body">
                 <div class="form-group">
                     <label for="marque" class="lelabel">Marque ou description (*)</label>
                     <textarea class="form-control" id="marque" name="marque" rows="3"
                         placeholder="Inscription sur le colis">{{ ($a != null) ? $a->marque : null }}</textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- observations -->
+        <div class="col-md-4">
+            <div class="card-body">
+                <div class="form-group">
+                    <label for="observations" class="lelabel">Observations (*)</label>
+                    <textarea class="form-control" id="observations" name="observations" rows="3"
+                        placeholder="Observations sur le colis">{{ ($a != null) ? $a->observations : null }}</textarea>
                 </div>
             </div>
         </div>

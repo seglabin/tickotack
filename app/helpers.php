@@ -392,9 +392,10 @@ function tableau_html($t, $liste_entete, $liste_colonne, $btn = "", $num = true,
                     $urlSupprimer = htmlspecialchars(route('utilisateur.supprimer', ['id' => $id]), ENT_QUOTES, 'UTF-8');
                     $html .= '<a href="' . $urlSupprimer . '" class="btn btn-danger btn-sm" onclick="return confirm(\'Voulez-vous vraiment supprimer cet utilisateur ?\');" style="margin:0 2px; padding:6px 10px; font-size:14px;" title="Supprimer"><i class="fa fa-trash"></i></a>';
                 } else {
+                    $urlSupprimer = htmlspecialchars(url($cfsuppr . '/' . $id), ENT_QUOTES, 'UTF-8');
                     $html .= $config === 'expedition'
-                        ? '<a href="#" class="dropdown-item text-danger" onclick="supprimer(\'' . $cfsuppr . '\',\'' . $id . '\'); return false;"><i class="fa fa-trash me-2"></i>Supprimer</a>'
-                        : '<a href="#" class="btn btn-danger btn-sm" onclick="supprimer(\'' . $cfsuppr . '\',\'' . $id . '\');" style="margin:0 2px; padding:6px 10px; font-size:14px;" title="Supprimer"><i class="fa fa-trash"></i></a>';
+                        ? '<a href="' . htmlspecialchars(route('expedition.supprimer', ['id' => $id]), ENT_QUOTES, 'UTF-8') . '" class="dropdown-item text-danger" onclick="return confirm(\'Voulez-vous vraiment supprimer cette expédition ?\');"><i class="fa fa-trash me-2"></i>Supprimer</a>'
+                        : '<a href="' . $urlSupprimer . '" class="btn btn-danger btn-sm" onclick="if (!confirm(\'Voulez-vous vraiment supprimer cet enregistrement ?\')) return false; var preloader = document.getElementById(\'preloader\'); if (preloader) preloader.style.display = \'block\';" style="margin:0 2px; padding:6px 10px; font-size:14px;" title="Supprimer"><i class="fa fa-trash"></i></a>';
                 }
             }
             if (strpos($btn, 'reinitialiser') !== false) {
@@ -602,9 +603,16 @@ function enregistreOperationFinanciere($sens, $montant, $idsrce, $libsrce, $idca
 
 function soldeCaisse($idcaisse)
 {
-    $ent = "SELECT SUM(montant) as total FROM operationfinancieres WHERE sens = 'Entrée' AND idcaisse = '" . $idcaisse . "'";
-    $sor = "SELECT SUM(montant) as total FROM operationfinancieres WHERE sens = 'Sortie' AND idcaisse = '" . $idcaisse . "' ";
-    return (collect(DB::select($ent))->first()->total ?? 0) - (collect(DB::select($sor))->first()->total ?? 0);
+    $entrees = DB::table('operationfinancieres')
+        ->where('idcaisse', $idcaisse)
+        ->where('sens', 'Entree')
+        ->sum('montant');
+    $sorties = DB::table('operationfinancieres')
+        ->where('idcaisse', $idcaisse)
+        ->where('sens', 'Sortie')
+        ->sum('montant');
+
+    return $entrees - $sorties;
 }
 
 function formatervaleur($valeur, $sepMilli = ' ')

@@ -3,8 +3,11 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\URL;
 use Tests\TestCase;
 
 class PaymentcoliTest extends TestCase
@@ -61,6 +64,164 @@ class PaymentcoliTest extends TestCase
             ->assertOk()
             ->assertJsonCount(2, 'paiements')
             ->assertJsonPath('total', 100);
+    }
+
+    public function test_expedition_deletion_cascades_related_records_and_confirms_success(): void
+    {
+        $expeditionId = $this->creerExpedition(100);
+        $etatId = DB::table('expeditions')->where('id', $expeditionId)->value('idetat');
+        $caisseId = DB::table('caisses')->insertGetId([
+            'libelle' => 'Caisse test',
+            'devise' => 'CFA',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('paymentcolis')->insert([
+            'idcolis' => $expeditionId,
+            'montant' => 25,
+            'payment_date' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        DB::table('histoexpeditions')->insert([
+            'datetat' => now()->toDateString(),
+            'idexpedition' => $expeditionId,
+            'idetat' => $etatId,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        DB::table('operationfinancieres')->insert([
+            'sens' => 'Entree',
+            'montant' => 25,
+            'idsrce' => $expeditionId,
+            'libsrce' => 'expeditions',
+            'idcaisse' => $caisseId,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->get('/supprimer-expedition/' . $expeditionId)
+            ->assertRedirect(route('expedition'))
+            ->assertSessionHas('success', 'L’expédition et ses données liées supprimées avec succès.');
+
+        $this->assertDatabaseMissing('expeditions', ['id' => $expeditionId]);
+        $this->assertDatabaseMissing('paymentcolis', ['idcolis' => $expeditionId]);
+        $this->assertDatabaseMissing('histoexpeditions', ['idexpedition' => $expeditionId]);
+        $this->assertDatabaseMissing('operationfinancieres', [
+            'libsrce' => 'expeditions',
+            'idsrce' => $expeditionId,
+        ]);
+    }
+
+    public function test_integrity_constraint_failure_keeps_financial_records_and_shows_an_alert(): void
+    {
+        $expeditionId = $this->creerExpedition(100);
+        $etatId = DB::table('expeditions')->where('id', $expeditionId)->value('idetat');
+        $caisseId = DB::table('caisses')->insertGetId([
+            'libelle' => 'Caisse test',
+            'devise' => 'CFA',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        DB::table('paymentcolis')->insert([
+            'idcolis' => $expeditionId,
+            'montant' => 25,
+            'payment_date' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        DB::table('histoexpeditions')->insert([
+            'datetat' => now()->toDateString(),
+            'idexpedition' => $expeditionId,
+            'idetat' => $etatId,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        DB::table('operationfinancieres')->insert([
+            'sens' => 'Entree',
+            'montant' => 25,
+            'idsrce' => $expeditionId,
+            'libsrce' => 'expeditions',
+            'idcaisse' => $caisseId,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        Schema::create('expedition_delete_constraints', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('expedition_id')
+                ->constrained('expeditions')
+                ->restrictOnDelete();
+        });
+        DB::table('expedition_delete_constraints')->insert(['expedition_id' => $expeditionId]);
+
+        $this->get('/supprimer-expedition/' . $expeditionId)
+            ->assertRedirect(route('expedition'))
+            ->assertSessionHas(
+                'error',
+                'Suppression impossible : cette expédition est encore référencée par des données liées. Vérifiez ses paiements, son historique et ses opérations financières.'
+            );
+
+        $this->assertDatabaseHas('expeditions', ['id' => $expeditionId]);
+        $this->assertDatabaseHas('paymentcolis', ['idcolis' => $expeditionId]);
+        $this->assertDatabaseHas('histoexpeditions', ['idexpedition' => $expeditionId]);
+        $this->assertDatabaseHas('operationfinancieres', [
+            'libsrce' => 'expeditions',
+            'idsrce' => $expeditionId,
+        ]);
+        $this->assertDatabaseHas('expedition_delete_constraints', ['expedition_id' => $expeditionId]);
+        Schema::drop('expedition_delete_constraints');
+    }
+
+    public function test_expedition_delete_action_uses_the_named_server_route(): void
+    {
+        $expeditionId = $this->creerExpedition(100);
+        session(['config' => 'expedition']);
+
+        ob_start();
+        tableau_html(
+            [(object) ['id' => $expeditionId, 'code' => 'COLIS-TEST', 'idetat' => 1, 'etat' => 'En transit']],
+            'Code',
+            'code',
+            'supprimer'
+        );
+        $html = ob_get_clean();
+
+        $this->assertStringContainsString(
+            'href="' . route('expedition.supprimer', ['id' => $expeditionId]) . '"',
+            $html
+        );
+        $this->assertStringContainsString(
+            'onclick="return confirm(\'Voulez-vous vraiment supprimer cette expédition ?\');"',
+            $html
+        );
+    }
+
+    public function test_other_delete_actions_keep_the_application_subdirectory_in_their_urls(): void
+    {
+        URL::forceRootUrl('http://localhost/tickotack/public');
+
+        try {
+            foreach (['conteneur', 'approcaisse', 'depense', 'transfert'] as $config) {
+                session(['config' => $config]);
+                ob_start();
+                tableau_html(
+                    [(object) ['id' => 123, 'code' => 'TEST']],
+                    'Code',
+                    'code',
+                    'supprimer'
+                );
+                $html = ob_get_clean();
+
+                $this->assertStringContainsString(
+                    'href="http://localhost/tickotack/public/supprimer-' . $config . '/123"',
+                    $html
+                );
+                $this->assertStringNotContainsString('onclick="supprimer(', $html);
+            }
+        } finally {
+            URL::forceRootUrl(null);
+        }
     }
 
     public function test_payments_are_rejected_after_the_expedition_is_withdrawn(): void
@@ -329,6 +490,8 @@ class PaymentcoliTest extends TestCase
             'datenreg' => now(),
             'montant' => $montant,
             'montantpaye' => 0,
+            'montantcolis' => $montant,
+            'autrecharge' => 0,
             'poids' => 1,
             'nbrcolis' => 1,
             'code' => uniqid('COLIS-'),

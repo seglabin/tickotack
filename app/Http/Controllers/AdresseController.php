@@ -91,17 +91,45 @@ class AdresseController extends Controller
     {
         try {
             // Contrôle d'intégrité référentielle
-            $hasTransferts = DB::table('transferts')
-                ->where('iddepart', $id)
-                ->orWhere('iddestination', $id)
-                ->exists();
+             $msg = "";
+             $hasTransferts = DB::table('transferts')
+             ->where('iddepart', $id)
+             ->orWhere('iddestination', $id)
+             ->exists();
+             if ($hasTransferts) {
+                 $msg .= "Cette adresse est liée à au moins un transfert existant.\n ";
+             }
 
-            if (!$hasTransferts) {
+             $hasExpéditions = DB::table('expeditions')
+             ->where('idadresdepart', $id)
+             ->orWhere('idadresdestination', $id)
+             ->exists();
+             if ($hasExpéditions) {
+                 $msg .= "Cette adresse est liée à au moins une expédition existante.\n ";
+             }
+
+             $hasConteneurs = DB::table('conteneurs')
+             ->where('idadresdepart', $id)
+             ->orWhere('idadresdestination', $id)
+             ->exists();
+             if ($hasConteneurs) {
+                 $msg .= "Cette adresse est liée à au moins un conteneur existant.\n ";
+             }
+
+             $hasCaisses = DB::table('caisses')
+             ->where('idadresse', $id)
+             ->exists();
+             if ($hasCaisses) {
+                 $msg .= "Cette adresse est liée à au moins une caisse existante.\n ";
+             }
+
+
+            if ($msg == "") {
                 $e = adresse::findOrFail($id);
                 $e->delete();
                 return redirect()->route('adresse');
             } else {
-                $info = "Cette adresse est liée à au moins un transfert existant.\nVous ne pouvez donc pas la supprimer.";
+                $info = $msg."\nVous ne pouvez pas supprimer cette adresse.";
                 $titre = "CONTRAINTE D'INTEGRITE";
                 return view('alertDoublon', compact('info', 'titre'));
             }

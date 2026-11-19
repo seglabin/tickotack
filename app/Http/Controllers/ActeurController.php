@@ -194,17 +194,30 @@ class ActeurController extends Controller
     public function supprimer($id)
     {
         try {
+
             $hasTransferts = DB::table('transferts')
                 ->where('idexpediteur', $id)
                 ->orWhere('idrecepteur', $id)
                 ->exists();
+            $msg = "";
+            if ($hasTransferts) {
+                $msg .= "Cet acteur est lié à au moins un transfert.\n";
+            }
+            $hasExpeditions = DB::table('expeditions')
+                 ->where('idexpediteur', $id)
+                ->orWhere('idrecepteur', $id)
+                ->exists();
+            if ($hasExpeditions) {
+                $msg .= "\nCet acteur est lié à au moins un colis.\n";
+            }
 
-            if (!$hasTransferts) {
+
+            if ($msg == "") {
                 $e = acteur::findOrFail($id);
                 $e->delete();
                 return redirect()->route('acteur');
             } else {
-                $info = "Cet acteur est lié à au moins un transfert.\nVous ne pouvez pas le supprimer.";
+                $info = $msg."Vous ne pouvez pas supprimer cet acteur.";
                 $titre = "CONTRAINTE D'INTEGRITE";
                 return view('alertDoublon', compact('info', 'titre'));
             }
