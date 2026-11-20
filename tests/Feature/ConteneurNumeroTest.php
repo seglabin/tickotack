@@ -174,7 +174,7 @@ class ConteneurNumeroTest extends TestCase
         $expeditionId = DB::table('expeditions')->insertGetId([
             'datenreg' => $now,
             'montant' => 100,
-            'montantpaye' => 0,
+            'montantpaye' => 10,
             'montantcolis' => 100,
             'autrecharge' => 0,
             'poids' => 1,
@@ -193,6 +193,18 @@ class ConteneurNumeroTest extends TestCase
             'created_at' => $now,
             'updated_at' => $now,
         ]);
+
+        DB::table('paymentcolis')->insert([
+            'payment_date' => $now,
+            'montant' => 25,
+            'idcolis' => $expeditionId,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+        $this->getJson(route('conteneur.expeditions', $firstId))
+            ->assertOk()
+            ->assertJsonPath('expeditions.0.totalapayer', 100)
+            ->assertJsonPath('expeditions.0.resteapayer', 65);
 
         DB::flushQueryLog();
         DB::enableQueryLog();

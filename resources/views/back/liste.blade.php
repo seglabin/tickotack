@@ -227,7 +227,7 @@ if(empty($conteneurs)) {
             ['code', 'Code'], ['datenreg', 'Date'], ['expediteur', 'Expéditeur'],
             ['recepteur', 'Récepteur'], ['villedepart', 'Départ'],
             ['villedestination', 'Destination'], ['nbrcolis', 'Colis'],
-            ['poids', 'Poids'], ['etat', 'État']
+            ['totalapayer', 'Total à payer'], ['resteapayer', 'Reste à payer']
           ];
           const table = document.createElement('table');
           table.className = 'table table-bordered table-striped align-middle mb-0';
@@ -244,7 +244,14 @@ if(empty($conteneurs)) {
           expeditions.forEach(function (expedition) {
             const ligne = tbody.insertRow();
             colonnes.forEach(function (colonne) {
-              ligne.insertCell().textContent = expedition[colonne[0]] ?? '';
+              const valeur = expedition[colonne[0]];
+              const estMontant = colonne[0] === 'totalapayer' || colonne[0] === 'resteapayer';
+              ligne.insertCell().textContent = estMontant
+                ? Number(valeur || 0).toLocaleString('fr-FR', {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2
+                }) + ' CFA'
+                : (valeur ?? '');
             });
           });
           contenu.appendChild(table);

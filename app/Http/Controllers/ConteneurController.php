@@ -130,7 +130,16 @@ class ConteneurController extends Controller
             ->leftJoin('acteurs as rec', 'rec.id', '=', 'e.idrecepteur')
             ->leftJoin('adresses as dep', 'dep.id', '=', 'e.iddepart')
             ->leftJoin('adresses as dest', 'dest.id', '=', 'e.iddestination')
-            ->leftJoin('elements as et', 'et.id', '=', 'e.idetat')
+            ->leftJoinSub(
+                DB::table('paymentcolis')
+                    ->select('idcolis')
+                    ->selectRaw('SUM(montant) as total')
+                    ->groupBy('idcolis'),
+                'paiements',
+                'paiements.idcolis',
+                '=',
+                'e.id'
+            )
             ->where('e.idconteneur', $id)
             ->orderByDesc('e.datenreg')
             ->get([
@@ -141,8 +150,13 @@ class ConteneurController extends Controller
                 'dep.libelle as villedepart',
                 'dest.libelle as villedestination',
                 'e.nbrcolis',
-                'e.poids',
-                'et.libelle as etat',
+                'e.montant as totalapayer',
+                DB::raw(
+                    'CASE WHEN COALESCE(e.montant, 0) - COALESCE(paiements.total, 0) - COALESCE(e.montantpaye, 0) < 0
+                    THEN 0
+                    ELSE COALESCE(e.montant, 0) - COALESCE(paiements.total, 0) - COALESCE(e.montantpaye, 0)
+                    END as resteapayer'
+                ),
             ]);
 
         return response()->json([
