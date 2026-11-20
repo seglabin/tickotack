@@ -435,7 +435,7 @@ class ConteneurController extends Controller
             }
             $e = conteneur::findOrFail($id);
             $e->delete();
-            dd($e);
+           // dd($e);
             //conteneur::findOrFail($id)->delete();
             return redirect()->route('conteneur');
         } catch (\Exception $e) {

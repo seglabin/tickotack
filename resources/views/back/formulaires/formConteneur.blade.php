@@ -216,6 +216,20 @@
         return valeur.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
     }
 
+    function placerExpeditionsSelectionneesEnHaut() {
+        const lignesCochees = [];
+        const lignesNonCochees = [];
+
+        listeExpeditions.querySelectorAll('tr').forEach(function (ligne) {
+            const checkbox = ligne.querySelector('input[name="expedition_ids[]"]');
+            (checkbox && checkbox.checked ? lignesCochees : lignesNonCochees).push(ligne);
+        });
+
+        lignesCochees.concat(lignesNonCochees).forEach(function (ligne) {
+            listeExpeditions.appendChild(ligne);
+        });
+    }
+
     function estBateau() {
         const option = selectTransport.options[selectTransport.selectedIndex];
         return option && normaliser(option.text).includes('bateau');
@@ -327,6 +341,7 @@
             listeExpeditions.appendChild(ligne);
             poidsExpeditions.set(String(expedition.id), Number(expedition.poids) || 0);
         });
+        placerExpeditionsSelectionneesEnHaut();
     }
 
     async function actualiserExpeditions() {
@@ -415,6 +430,7 @@
         poidsExpeditions.set(id, Number(checkbox.dataset.poids) || 0);
         if (checkbox.checked) selections.add(id);
         else selections.delete(id);
+        placerExpeditionsSelectionneesEnHaut();
         actualiserPoidsTotal();
     });
 
@@ -422,6 +438,7 @@
         poidsExpeditions.set(String(checkbox.value), Number(checkbox.dataset.poids) || 0);
         if (checkbox.checked) selections.add(String(checkbox.value));
     });
+    placerExpeditionsSelectionneesEnHaut();
     actualiserChamps();
     actualiserPoidsTotal();
     actualiserNumeroConteneur();
