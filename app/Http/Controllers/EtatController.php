@@ -63,6 +63,8 @@ class EtatController extends Controller
     public function paiements(Request $request)
     {
         $filters = $this->validatedFilters($request, ['conteneur', 'colis']);
+        $idconteneur = $filters['conteneur'] ?? null;
+        // dd($idconteneur);
         $query = DB::table('paymentcolis as p')
             ->join('expeditions as e', 'e.id', '=', 'p.idcolis')
             ->leftJoin('conteneurs as co', 'co.id', '=', 'e.idconteneur')
@@ -79,7 +81,15 @@ class EtatController extends Controller
 
         $donnees = $query->orderByDesc('p.payment_date')->orderByDesc('p.id')->get();
         $conteneurs = DB::table('conteneurs')->orderBy('numconteneur')->get(['id', 'numconteneur']);
-        $colis = $this->accessibleExpeditions()->orderBy('e.code')->get(['e.id', 'e.code']);
+        $colis = DB::table('expeditions as e')
+            ->leftJoin('conteneurs as co', 'co.id', '=', 'e.idconteneur')
+            ->select('e.id', 'e.code', 'co.numconteneur')
+            ->when($idconteneur, function ($query) use ($idconteneur) {
+                $query->where('e.idconteneur', $idconteneur);
+            })
+            ->orderBy('e.code')
+            ->get();    
+        // $colis = $this->accessibleExpeditions()->orderBy('e.code')->get(['e.id', 'e.code']);
 
         return $this->renderReport('paiements', 'Liste des paiements', $donnees, $filters, compact('conteneurs', 'colis'));
     }
