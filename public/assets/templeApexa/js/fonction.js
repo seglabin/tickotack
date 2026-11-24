@@ -13,6 +13,15 @@ function nouveau(lien, method = 'GET') { //alert(lien);
   document.forms["myform"].submit();
 }
 
+
+    function imprimerPDF() {
+        let act = '/imprimer';  //_blank
+        document.forms["myform"].target = '_blank';
+        document.forms["myform"].method = 'GET';
+        document.forms["myform"].action = act;
+        document.forms["myform"].submit();
+    }
+
 function afficher(lien, method = 'GET') {
   const form = document.forms.namedItem('myform');
   const destination = urlApplication(lien.trimStart());

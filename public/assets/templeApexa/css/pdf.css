@@ -1,0 +1,149 @@
+h4 {
+    margin: 0;
+}
+
+.w-full {
+    width: 100%;
+}
+
+.w-half {
+    width: 50%;
+}
+
+.margin-top {
+    margin-top: 1.25rem;
+}
+
+.footer {
+    font-size: 0.875rem;
+    padding: 1rem;
+    background-color: rgb(241 245 249);
+}
+
+table {
+    width: 100%;
+    border-spacing: 0;
+}
+
+table.impression {
+    font-size: 1.8rem;
+    border: 0.1px solid rgb(13, 17, 17);
+    /* border: 1px solid rgb(13, 17, 17); */
+    /* font-size: 0.875rem; */
+}
+
+table.impression tr {
+    background-color: rgb(96 165 250);
+
+}
+
+table.impression th {
+    background-color: #6fc5f2;
+
+}
+
+table.impression th {
+    color: #ffffff;
+    padding: 0.5rem;
+
+}
+
+table tr.items {
+    background-color: rgb(241 245 249);
+}
+
+table tr.items td {
+    padding: 0.5rem;
+    border: 0.1px solid rgb(13, 17, 17);
+}
+
+.total {
+    text-align: right;
+    margin-top: 1rem;
+    font-size: 0.875rem;
+}
+
+table.impression tr:nth-child(even) {
+    background-color: #CED4E5;
+    /* Couleur gris clair pour les lignes paires */
+}
+
+/*Optionnel : pour les lignes impaires */
+table.impression tr:nth-child(odd) {
+    background-color: #E8EBF5;
+    /* Couleur blanche pour les lignes impaires */
+}
+
+.trait {
+    border: none;
+    height: 3px;
+    background-color: brown;
+    width: 90%;
+    margin: 20px auto;
+}
+
+.traitPied {
+    /* border: none; */
+    border-width: 2px;
+    border-style: double;
+    /* border-top-color: brown;
+    border-bottom-color: brown; */
+    border-right-style: none;
+    border-left-style: none;
+    /* height: 5px; */
+    background-color: brown;
+    width: 95%;
+    margin: 2px auto;
+}
+
+.logo {
+    width: 90px;
+    height: 90px;
+    border-radius: 10%;
+}
+
+.photoPersonne {
+    width: 98px;
+    height: 105px;
+    border-radius: 10px;
+}
+.bartitre {
+   background-color: #e0ebff;
+   padding: 8px;
+   border-radius: 20px;
+}
+.letitre {
+   background-color: #c6dee0;
+   text-align: center;
+   font-family :'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+   font-weight: 300;
+   font-size: 3.5rem;
+   padding: 3px;
+
+   /* position: absolute;
+   display: inline; */
+   /* display: flex;
+   justify-content: center;
+   align-items: center;
+   margin-left: auto;
+   margin-right: auto; */
+   
+   /* padding: 5px; */
+}
+.titreCarte {
+   background-color: #c1e6e9;
+   text-align: center;
+   font-family :'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+   font-weight: bold;
+   font-size: 2.5rem;
+   padding: 3px;
+
+}
+
+.texteCarte{
+    font-size: 1.8rem;
+}
+
+.page-break-after {
+    page-break-after: always;
+}

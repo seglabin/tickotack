@@ -69,7 +69,7 @@
 <div class="etat-report">
     <div class="etat-report__actions no-print">
         <button type="button" class="etat-report__button etat-report__button--secondary" onclick="history.back()">Retour</button>
-        <button type="button" class="etat-report__button etat-report__button--print" onclick="window.print()">Imprimer</button>
+        <button type="button" class="etat-report__button etat-report__button--print" onclick="imprimerPDF()">Imprimer</button>
     </div>
 
     <div class="etat-print-header">
@@ -167,9 +167,112 @@
         <button type="button" class="etat-report__button" onclick="appliquerFiltresEtats('{{ route('etats.' . $type) }}')">Filtrer</button>
         <a href="{{ route('etats.' . $type) }}" class="etat-report__button etat-report__button--secondary">Réinitialiser</a>
     </div>
+@php
+    switch ($type) {
+        case 'colis':
+            $colonnesImpression = [
+                'code' => 'N°',
+                'expediteur' => 'Expéditeur',
+                'recepteur' => 'Récepteur',
+                'numrecepteur' => 'N° Récepteur',
+                'trajet' => 'Trajet',
+                'statut' => 'Statut',
+                'conteneur' => 'Conteneur',
+                'montant' => 'Montant',
+                'totalpaye' => 'Total payé',
+                'resteapayer' => 'Reste à payer',
+            ];
+            break;
+        case 'paiements':
+            $colonnesImpression = [
+                'payment_date' => 'Date du paiement',
+                'code' => 'Référence colis',
+                'montant' => 'Montant',
+            ];
+            break;
+        case 'transferts':
+            $colonnesImpression = [
+                'numero' => 'N°',
+                'date' => 'Date',
+                'code' => 'Code',
+                'expediteur' => 'Expéditeur',
+                'trajet' => 'Trajet',
+                'statut' => 'Statut',
+                'montdepot' => 'Montant Dépôt',
+                'montretrait' => 'Montant Retrait',
+            ];
+            break;
+        default:
+            $colonnesImpression = [
+                'numero' => 'N°',
+                'date' => 'Date',
+                'libelle' => 'Libellé',
+                'montant' => 'Montant',
+                'caisse' => 'Caisse',
+            ];
+            break;
+    }
 
+    $entete = array_values($colonnesImpression);
+    $coltitre = implode('|', $entete);
+    $coldata = implode('|', array_keys($colonnesImpression));
+    $donneeimprim = [];
+
+    foreach ($donnees as $index => $donnee) {
+        if ($type === 'colis') {
+            $ligneImpression = [
+                'code' => $donnee->code,
+                'expediteur' => $donnee->expediteur ?: '-',
+                'recepteur' => $donnee->recepteur ?: '-',
+                'numrecepteur' => $donnee->numrecepteur ?: '-',
+                'trajet' => ($donnee->villedepart ?: '-') . ' - ' . ($donnee->villedestination ?: '-'),
+                'statut' => $donnee->statut ?: '-',
+                'conteneur' => $donnee->conteneur ?: '-',
+                'montant' => number_format((float) $donnee->montant, 0, ',', ' '),
+                'totalpaye' => number_format((float) $donnee->totalpaye, 0, ',', ' '),
+                'resteapayer' => number_format(max(0, (float) $donnee->montant - (float) $donnee->totalpaye), 0, ',', ' '),
+            ];
+        } elseif ($type === 'paiements') {
+            $ligneImpression = [
+                'payment_date' => date('d/m/Y H:i', strtotime($donnee->payment_date)),
+                'code' => $donnee->code,
+                'montant' => number_format((float) $donnee->montant, 0, ',', ' '),
+            ];
+        } elseif ($type === 'transferts') {
+            $ligneImpression = [
+                'numero' => $index + 1,
+                'date' => date('d/m/Y H:i', strtotime($donnee->datetransfert)),
+                'code' => $donnee->code,
+                'expediteur' => $donnee->expediteur ?: '-',
+                'trajet' => ($donnee->villedepart ?: '-') . ' - ' . ($donnee->villedestination ?: '-'),
+                'statut' => $donnee->statut ?: '-',
+                'montdepot' => number_format((float) $donnee->montdepot, 0, ',', ' '),
+                'montretrait' => number_format((float) $donnee->montretrait, 0, ',', ' '),
+            ];
+        } else {
+            $ligneImpression = [
+                'numero' => $index + 1,
+                'date' => date('d/m/Y H:i', strtotime($donnee->date)),
+                'libelle' => $donnee->libelle,
+                'montant' => number_format((float) $donnee->montant, 0, ',', ' '),
+                'caisse' => $donnee->caisse ?: '-',
+            ];
+        }
+
+        $donneeimprim[] = $ligneImpression;
+    }
+
+    session([
+        'donneeimprim' => $donneeimprim,
+        'entete' => $entete,
+        'coltitre' => $coltitre,
+        'coldata' => $coldata,
+        'titre' => $titre,
+    ]);
+@endphp
     <div class="etat-report__table-wrap">
-        <table class="etat-report__table">
+        <!-- <table class="etat-report__table"> -->
+            <table id="example1" class="table table-bordered table-striped tableDT" style="width:100%; border-collapse:collapse;">
             <thead>
             <tr>
                 @if($type === 'colis')

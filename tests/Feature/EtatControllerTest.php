@@ -106,14 +106,37 @@ class EtatControllerTest extends TestCase
             ->assertSee('window.print()', false)
             ->assertSee('transparent-header', false)
             ->assertSee('assets/images/entete.png', false)
-            ->assertSee('size: A4 landscape', false);
+            ->assertSee('size: A4 landscape', false)
+            ->assertSessionHas('coldata', 'code|expediteur|recepteur|numrecepteur|trajet|statut|conteneur|montant|totalpaye|resteapayer')
+            ->assertSessionHas('entete', [
+                'N°', 'Expéditeur', 'Récepteur', 'N° Récepteur', 'Trajet',
+                'Statut', 'Conteneur', 'Montant', 'Total payé', 'Reste à payer',
+            ])
+            ->assertSessionHas('donneeimprim.0', [
+                'code' => 'COLIS-ETAT-01',
+                'expediteur' => 'Expéditeur COLIS-ETAT-01',
+                'recepteur' => 'Récepteur COLIS-ETAT-01',
+                'numrecepteur' => '0000000000',
+                'trajet' => 'Cotonou - Lomé',
+                'statut' => 'En transit',
+                'conteneur' => 'CONT-ETAT-01',
+                'montant' => '1 000',
+                'totalpaye' => '600',
+                'resteapayer' => '400',
+            ]);
 
         $this->get(route('etats.paiements', $periode + ['conteneur' => $conteneurId, 'colis' => $expeditionId]))
             ->assertOk()
             ->assertSee('COLIS-ETAT-01')
             ->assertSee('300')
             ->assertDontSee('08/11/2026')
-            ->assertSee('size: A4 portrait', false);
+            ->assertSee('size: A4 portrait', false)
+            ->assertSessionHas('coldata', 'payment_date|code|montant')
+            ->assertSessionHas('donneeimprim.0', [
+                'payment_date' => '04/11/2026 10:00',
+                'code' => 'COLIS-ETAT-01',
+                'montant' => '300',
+            ]);
 
         $this->get(route('etats.paiements', ['colis' => $horsPeriodeId]))
             ->assertOk()

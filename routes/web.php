@@ -36,6 +36,9 @@ Route::get('/logout', [App\Http\Controllers\AuthController::class, 'logout']);
 
 
 Route::middleware(['auth'])->group(function () {
+
+Route::get('/imprimer', [App\Http\Controllers\ImpressionController::class, 'imprimer'])->name('imprimer');
+
     Route::get('/historique-actions', [App\Http\Controllers\DatabaseAuditController::class, 'index'])
         ->name('admin.historique-actions');
 

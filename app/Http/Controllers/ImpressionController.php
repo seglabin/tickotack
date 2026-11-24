@@ -13,20 +13,25 @@ class ImpressionController extends Controller
     public function imprimer(Request $request)
     {
         // dd($request); donneeimprim  coltitre  coldata
-        // dd(session('config'));
+        // dd(session('module'));
         try {
-            $idabonnement = (count($_GET) > 0 && isset($_GET['idabonnement'])) ? $_GET['idabonnement'] : (session('idabonnement') != null ? session('idabonnement') : session('idabonnementEncours'));
-            $idanneescolaire = (count($_GET) > 0 && isset($_GET['idanneescolaire'])) ? $_GET['idanneescolaire'] : (session('idanneescolaire') != null ? session('idanneescolaire') : null);
-            $letitre = (count($_GET) > 0 && isset($_GET['letitre'])) ? $_GET['letitre'] : 'Titre document'; //idanneescolaire
-            $idclassannesco = (count($_GET) > 0 && isset($_GET['idclassannesco'])) ? $_GET['idclassannesco'] : (session('idclassannescosEncours') != null ? session('idclassannescosEncours') : null);
-            $idinscription = (count($_GET) > 0 && isset($_GET['idinscription'])) ? $_GET['idinscription'] : null;
-            $idsession = (count($_GET) > 0 && isset($_GET['idsession'])) ? $_GET['idsession'] : null;
+            $module = session('module') != null ? session('module') : null;
+            // $idabonnement = (count($_GET) > 0 && isset($_GET['idabonnement'])) ? $_GET['idabonnement'] : (session('idabonnement') != null ? session('idabonnement') : session('idabonnementEncours'));
+            // $idanneescolaire = (count($_GET) > 0 && isset($_GET['idanneescolaire'])) ? $_GET['idanneescolaire'] : (session('idanneescolaire') != null ? session('idanneescolaire') : null);
+            // $letitre = (count($_GET) > 0 && isset($_GET['letitre'])) ? $_GET['letitre'] : 'Titre document'; //idanneescolaire
+            // $idclassannesco = (count($_GET) > 0 && isset($_GET['idclassannesco'])) ? $_GET['idclassannesco'] : (session('idclassannescosEncours') != null ? session('idclassannescosEncours') : null);
+            // $idinscription = (count($_GET) > 0 && isset($_GET['idinscription'])) ? $_GET['idinscription'] : null;
+            // $idsession = (count($_GET) > 0 && isset($_GET['idsession'])) ? $_GET['idsession'] : null;
             $config = session('config') != null ? session('config') : '';
-            $labonne = $idabonnement != null ? collect(DB::select(" SELECT * FROM abonnements WHERE id = '" . $idabonnement . "' "))->first() : null;
-            $lannesco = $idanneescolaire != null ? collect(DB::select(" SELECT a.*, CONCAT(andebut,' - ',(andebut + 1)) libannee FROM anneescolaires a WHERE id = '" . $idanneescolaire . "' "))->first() : null;
-            $laclannesco = $idclassannesco != null ? collect(DB::select(" SELECT ca.*, CONCAT(libelle, ' ', COALESCE(groupe, '')) libclas, CONCAT(sigle, ' / ', COALESCE(groupe, '')) libclasabrev FROM classannescos ca , classetypes c WHERE ca.idclasse = c.id AND  ca.id = '" . $idclassannesco . "' "))->first() : null;
-            $lapprenant = $idinscription != null ? collect(DB::select(" SELECT ins.*, CONCAT(nom, ' ', prenoms) libapprenant FROM inscriptions ins, apprenants a , personnes p WHERE a.idpersonne = p.id AND ins.idapprenant = a.id AND  ins.id = '" . $idinscription . "' "))->first() : null;
-            $lasession = $idsession != null ? collect(DB::select(" SELECT * FROM sessionacademiques WHERE id = '" . $idsession . "' "))->first() : null;
+            $letitre = session('titre') != null ? session('titre') : '';
+            // $labonne = $idabonnement != null ? collect(DB::select(" SELECT * FROM abonnements WHERE id = '" . $idabonnement . "' "))->first() : null;
+            // $lannesco = $idanneescolaire != null ? collect(DB::select(" SELECT a.*, CONCAT(andebut,' - ',(andebut + 1)) libannee FROM anneescolaires a WHERE id = '" . $idanneescolaire . "' "))->first() : null;
+            // $laclannesco = $idclassannesco != null ? collect(DB::select(" SELECT ca.*, CONCAT(libelle, ' ', COALESCE(groupe, '')) libclas, CONCAT(sigle, ' / ', COALESCE(groupe, '')) libclasabrev FROM classannescos ca , classetypes c WHERE ca.idclasse = c.id AND  ca.id = '" . $idclassannesco . "' "))->first() : null;
+            // $lapprenant = $idinscription != null ? collect(DB::select(" SELECT ins.*, CONCAT(nom, ' ', prenoms) libapprenant FROM inscriptions ins, apprenants a , personnes p WHERE a.idpersonne = p.id AND ins.idapprenant = a.id AND  ins.id = '" . $idinscription . "' "))->first() : null;
+            // $lasession = $idsession != null ? collect(DB::select(" SELECT * FROM sessionacademiques WHERE id = '" . $idsession . "' "))->first() : null;
+           
+            //  dd(session('donneeimprim'));
+
             $donneeimprim = session('donneeimprim') != null ? session('donneeimprim') : array();
             $coltitre = session('coltitre') != null ? session('coltitre') : '';
             $coldata = session('coldata') != null ? session('coldata') : '';
@@ -63,25 +68,25 @@ class ImpressionController extends Controller
             //     case 'moyenne-periode':
             //     case 'permission':
             //     case 'element':
-            if ($lannesco != null) {
-                array_push($ln, 'Année scolaire ');
-                array_push($ln, $lannesco->libannee);
-            }
-            if ($laclannesco != null) {
-                array_push($ln, 'Classe Année scolaire ');
-                array_push($ln, $laclannesco->libclas);
-            }
-            if ($lasession != null) {
-                array_push($ln, 'Session académique ');
-                array_push($ln, $lasession->libelle);
-            }
+            // if ($lannesco != null) {
+            //     array_push($ln, 'Année scolaire ');
+            //     array_push($ln, $lannesco->libannee);
+            // }
+            // if ($laclannesco != null) {
+            //     array_push($ln, 'Classe Année scolaire ');
+            //     array_push($ln, $laclannesco->libclas);
+            // }
+            // if ($lasession != null) {
+            //     array_push($ln, 'Session académique ');
+            //     array_push($ln, $lasession->libelle);
+            // }
             if (count($ln) > 0)
                 array_push($hautdoc, $ln);
             $ln = array();
-            if ($lapprenant != null) {
-                array_push($ln, 'Apprenant : ');
-                array_push($ln, $lapprenant->libapprenant);
-            }
+            // if ($lapprenant != null) {
+            //     array_push($ln, 'Apprenant : ');
+            //     array_push($ln, $lapprenant->libapprenant);
+            // }
             if (count($ln) > 0)
                 array_push($hautdoc, $ln);
             $stats = array();
@@ -124,14 +129,12 @@ class ImpressionController extends Controller
             // session(['config' => 'abonnement']);
             $pdf = PDF::loadView('print.liste', compact(
                 'donneeimprim',
-                'labonne',
                 'coldata',
                 'coltitre',
                 'hautdoc',
                 'letitre',
                 'config',
                 'donneestats',
-                'laclannesco',
 
             ))->setPaper($frmat, $pag);
             $pdf->setBasePath(public_path());

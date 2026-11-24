@@ -261,18 +261,28 @@ function tableau_html($t, $liste_entete, $liste_colonne, $btn = "", $num = true,
     $html .= '</tr></thead>';
 
     // Corps
+    $donneeimprim = array();
+    $entete = $th;// array();
+    $coltitre = $liste_entete;
+    $coldata = $liste_colonne;
     $html .= '<tbody>';
     foreach ($t as $i => $v) {
         $id = is_array($v) ? ($v['id'] ?? '') : ($v->id ?? '');
         $dataln = $id;
+
+        $ln = array();
+        // $ln['libapprenant'] = $d->libapprenant;
+        
         $html .= '<tr>';
         if ($num) {
+            $ln['num'] = $i + 1;
             $html .= '<td>' . ($i + 1) . '</td>';
         }
         $maj = is_array($v) ? ($v['maj'] ?? '') : ($v->maj ?? '');
         foreach ($tc as $e) {
             $val = is_array($v) ? ($v[$e] ?? '') : ($v->$e ?? '');
             $dataln .= '|' . $val;
+                 $ln[$e] = formatervaleur($val) ;
             $html .= '<td>' . formatervaleur($val) . '</td>';
         }
         if ($btn != '') {
@@ -291,19 +301,18 @@ function tableau_html($t, $liste_entete, $liste_colonne, $btn = "", $num = true,
                 $iddestination = is_array($v) ? ($v['iddestination'] ?? '') : ($v->iddestination ?? '');
                 $idcreateur = is_array($v) ? ($v['iduser'] ?? null) : ($v->iduser ?? null);
                 // if ($iduserRole == 1 || ($peutModifier && $iddestination == $idadrescaisseuser )) { //&& (int) $idcreateur === (int) \Illuminate\Support\Facades\Auth::id()
-                if ($iduserRole == 1 || ( $iddestination == $idadrescaisseuser )) { //&& (int) $idcreateur === (int) \Illuminate\Support\Facades\Auth::id()
+                if ($iduserRole == 1 || ($iddestination == $idadrescaisseuser)) { //&& (int) $idcreateur === (int) \Illuminate\Support\Facades\Auth::id()
                     $html .= '<input type="hidden" id="dataln' . $i . '" name="dataln' . $i . '" value="' . $dataln . '">';
                     $html .= '<button type="button" class="btn btn-info btn-sm" onclick="ouvrirModalRetrait(\'' . $id . '\');" style="margin:0 2px; padding:6px 10px; font-size:14px;" title="Retrait de transfert"><i class="fa fa-credit-card"></i></button>';
-                }   
-                
+                }
             }
 
             if (strpos($btn, 'recu') !== false && $config == 'transfert') {
-                if($maj == '1' || $maj == ''){
+                if ($maj == '1' || $maj == '') {
                     $html .= '<a href="/transfert/' . $id . '/recu-depot-transfert" target="_blank" class="btn btn-secondary btn-sm" style="margin:0 2px; padding:6px 10px; font-size:14px;" title="Imprimer le reçu Dépôt"><i class="fa fa-print"></i></a>';
-                }else{                    
+                } else {
                     $html .= '<a href="/transfert/' . $id . '/recu-retrait-transfert" target="_blank" class="btn btn-secondary btn-sm" style="margin:0 2px; padding:6px 10px; font-size:14px;" title="Imprimer le reçu -Retrait "><i class="fa fa-print"></i></a>';
-                }           
+                }
             }
 
             if ($config == 'expedition') {
@@ -413,12 +422,17 @@ function tableau_html($t, $liste_entete, $liste_colonne, $btn = "", $num = true,
                     $html .= '<div class="dropdown expedition-actions"><button type="button" class="btn btn-outline-primary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Actions du colis"><i class="fa fa-ellipsis-h me-1"></i>Actions</button><div class="dropdown-menu dropdown-menu-end expedition-actions-menu">' . $actions . '</div></div>';
                 }
             }
-           
+
             $html .= '</td>';
         }
+        array_push($donneeimprim, $ln);
         $html .= '</tr>';
     }
     $html .= '</tbody></table></div>';
+     session(['donneeimprim' => $donneeimprim]);
+        session(['entete' => $entete]);
+        session(['coltitre' => $coltitre]);
+        session(['coldata' => $coldata]);
 
     echo $html;
 }
@@ -813,7 +827,7 @@ function afficheArticle($id)
 function transfertParCritere($critere = "", $iduser = null, $isAdmin = false)
 {
 
-$rekete = "
+    $rekete = "
             SELECT t.id, t.iduser, CASE WHEN ? = 1 OR t.iduser = ? THEN 1 ELSE 0 END AS peutmodifier,
                    t.code, t.datetransfert, t.datepayement, t.montdepot, t.montretrait, t.montpaye,
                 t.idexpediteur, t.idrecepteur, t.iddepart, t.iddestination, t.idmoyentransfert,
@@ -834,7 +848,7 @@ $rekete = "
             " . $critere . "            
             ORDER BY t.datetransfert DESC
         ";
-        // dd($rekete);
+    // dd($rekete);
     $transferts = collect(DB::select($rekete, [$isAdmin ? 1 : 0, $iduser])); //->first(); WHERE t.id = ?
 
     abort_unless($transferts, 404, 'Transfert introuvable.');
