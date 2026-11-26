@@ -83,7 +83,7 @@
     <div class="etat-print-criteria">
         <span><strong>Période :</strong> {{ $periodeLabel }}</span>
         @if(isset($conteneurs))
-            <span><strong>Conteneur :</strong> {{ $conteneurSelectionne->numconteneur ?? 'Tous' }}</span>
+            <span><strong>Expédition :</strong> {{ $conteneurSelectionne->numconteneur ?? 'Tous' }}</span>
         @endif
         @if(isset($statuts))
             <span><strong>Statut :</strong> {{ $statutSelectionne->libelle ?? 'Tous' }}</span>
@@ -108,9 +108,9 @@
         </div>
         @if($type === 'colis')
             <div>
-                <label for="conteneur">Conteneur</label>
+                <label for="conteneur">Expédition</label>
                 <select id="conteneur" name="conteneur">
-                    <option value="">Tous les conteneurs</option>
+                    <option value="">Toutes les expéditions</option>
                     @foreach($conteneurs as $conteneur)
                         <option value="{{ $conteneur->id }}" @selected(($filters['conteneur'] ?? '') == $conteneur->id)>{{ $conteneur->numconteneur }}</option>
                     @endforeach
@@ -276,7 +276,7 @@
             <thead>
             <tr>
                 @if($type === 'colis')
-                    <th>N°</th><th>Expéditeur</th><th>Récepteur</th><th>N° Récepteur</th><th>Trajet</th><th>Statut</th><th>Conteneur</th><th>Montant</th><th>Total payé</th><th>Reste à payer</th><th class="no-print">Paiements</th>
+                    <th>N°</th><th>Expéditeur</th><th>Récepteur</th><th>N° Récepteur</th><th>Trajet</th><th>Statut</th><!--th>Conteneur</th--><th>Montant</th><th>Total payé</th><th>Reste à payer</th><th class="no-print">Paiements</th>
                 @elseif($type === 'paiements')
                     <th>Date du paiement</th><th>Référence colis</th><th>Montant</th>
                 @elseif($type === 'transferts')
@@ -296,7 +296,7 @@
                         <td>{{ $donnee->numrecepteur ?: '-' }}</td>
                         <td>{{ $donnee->villedepart ?: '-' }} - {{ $donnee->villedestination ?: '-' }}</td>
                         <td>{{ $donnee->statut ?: '-' }}</td>
-                        <td>{{ $donnee->conteneur ?: '-' }}</td>
+                        <!-- <td>{{ $donnee->conteneur ?: '-' }}</td> -->
                         <td class="number">{{ number_format((float) $donnee->montant, 0, ',', ' ') }}</td>
                         <td class="number">{{ number_format((float) $donnee->totalpaye, 0, ',', ' ') }}</td>
                         <td class="number">{{ number_format(max(0, (float) $donnee->montant - (float) $donnee->totalpaye), 0, ',', ' ') }}</td>

@@ -57,7 +57,7 @@ class EtatController extends Controller
         $conteneurs = DB::table('conteneurs')->orderBy('numconteneur')->get(['id', 'numconteneur']);
         $statuts = DB::table('elements')->where('nomtable', 'etat')->orderBy('libelle')->get(['id', 'libelle']);
 
-        return $this->renderReport('colis', 'Liste des colis (expéditions)', $donnees, $filters, compact('conteneurs', 'statuts'));
+        return $this->renderReport('colis', "Liste des colis d'expédition", $donnees, $filters, compact('conteneurs', 'statuts'));
     }
 
     public function paiements(Request $request)

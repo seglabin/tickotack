@@ -90,9 +90,9 @@ if(empty($conteneurs)) {
 
       <div class="col-md-3">
         <div class="form-group">
-          <label for="conteneur" class="form-label">Conteneur</label>
+          <label for="conteneur" class="form-label">Expédition</label>
            @php
-          echo chargerCombo($conteneurs, 'id', 'libelle', 'conteneur', 'Tous les conteneurs', '', '', request('conteneur'));
+          echo chargerCombo($conteneurs, 'id', 'libelle', 'conteneur', 'Toutes les expéditions', '', '', request('conteneur'));
           @endphp          
         </div>
       </div>
@@ -151,7 +151,7 @@ if(empty($conteneurs)) {
     <div class="modal-dialog modal-xl modal-dialog-scrollable" style="width: min(calc(100vw - 2rem), 1600px); max-width: 1600px;">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="modalExpeditionsConteneurLabel">Les Colis du conteneur/Cargo </h5>
+          <h5 class="modal-title" id="modalExpeditionsConteneurLabel">Les Colis de l'expédition </h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
         </div>
         <div class="modal-body">

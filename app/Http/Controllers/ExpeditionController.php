@@ -109,7 +109,7 @@ class ExpeditionController extends Controller
             $adresses = adresse::orderBy('libelle')->get();
 
             $nouv = $listeRetraits ? null : '/ajout-expedition';
-            $entete = 'Expéditeur|Récepteur|N° Récepteur|Trajet|Statut|Conteneur';
+            $entete = 'Expéditeur|Récepteur|N° Récepteur|Trajet|Statut|Expédition';
             $cols = 'expediteur|recepteur|numrecepteur|trajet|etat|conteneur';
             // $entete = 'Date|Code|Expéditeur|Trajet|Montant|Poids|Statut|Conteneur';
             // $cols = 'datenreg|code|expediteur|trajet|montant|poids|etat|conteneur';
@@ -219,7 +219,8 @@ class ExpeditionController extends Controller
                 $e->datenreg         = $request->datenreg;
                 $e->montantcolis     = (float) sansespace($request->input('montantcolis', 0));
                 $e->autrecharge      = (float) sansespace($request->input('autrecharge', 0));
-                $e->montant          = $e->montantcolis + $e->autrecharge;
+                $e->reduction        = (float) sansespace($request->input('reduction', 0));
+                $e->montant          = $e->montantcolis + $e->autrecharge - $e->reduction;
                 $e->marque           = $request->marque;
                 $e->observations           = $request->observations;
                 $e->poids            = (float) sansespace($request->poids);
