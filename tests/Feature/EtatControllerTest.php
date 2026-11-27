@@ -73,7 +73,12 @@ class EtatControllerTest extends TestCase
         $etatId = $this->creerElement('En transit', 'etat');
         $expeditionId = $this->creerExpedition($adresseAgent, $adresseDestination, $etatId, $conteneurId, 'COLIS-ETAT-01');
         DB::table('expeditions')->where('id', $expeditionId)->update(['montantpaye' => 100]);
-        $horsPeriodeId = $this->creerExpedition($adresseAgent, $adresseDestination, $etatId, $conteneurId, 'COLIS-ETAT-02', '2026-10-20 10:00:00');
+        $autreExpeditionId = $this->creerExpedition($adresseAgent, $adresseDestination, $etatId, $conteneurId, 'COLIS-ETAT-02');
+        DB::table('acteurs')->where('id', DB::table('expeditions')->where('id', $expeditionId)->value('idrecepteur'))
+            ->update(['nom' => 'Zoe Zulu']);
+        DB::table('acteurs')->where('id', DB::table('expeditions')->where('id', $autreExpeditionId)->value('idrecepteur'))
+            ->update(['nom' => 'Alice Alpha']);
+        $horsPeriodeId = $this->creerExpedition($adresseAgent, $adresseDestination, $etatId, $conteneurId, 'COLIS-ETAT-03', '2026-10-20 10:00:00');
         $this->creerExpedition($this->creerAdresse('Parakou'), $this->creerAdresse('Accra'), $etatId, null, 'COLIS-HORS-AGENCE');
 
         DB::table('paymentcolis')->insert([
@@ -97,13 +102,15 @@ class EtatControllerTest extends TestCase
         $this->get(route('etats.colis', $periode + ['conteneur' => $conteneurId, 'statut' => $etatId]))
             ->assertOk()
             ->assertSee('COLIS-ETAT-01')
+            ->assertSeeInOrder(['COLIS-ETAT-02', 'COLIS-ETAT-01'])
+            ->assertSee('data-order-column="2"', false)
             ->assertSee('En transit')
             ->assertSee('600')
             ->assertSee('400')
-            ->assertDontSee('COLIS-ETAT-02')
+            ->assertDontSee('COLIS-ETAT-03')
             ->assertDontSee('COLIS-HORS-AGENCE')
             ->assertSee(route('etats.paiements', ['colis' => $expeditionId]), false)
-            ->assertSee('window.print()', false)
+            ->assertSee('onclick="imprimerPDF()"', false)
             ->assertSee('transparent-header', false)
             ->assertSee('assets/images/entete.png', false)
             ->assertSee('size: A4 landscape', false)
@@ -112,10 +119,11 @@ class EtatControllerTest extends TestCase
                 'N°', 'Expéditeur', 'Récepteur', 'N° Récepteur', 'Trajet',
                 'Statut', 'Conteneur', 'Montant', 'Total payé', 'Reste à payer',
             ])
-            ->assertSessionHas('donneeimprim.0', [
+            ->assertSessionHas('donneeimprim.0.code', 'COLIS-ETAT-02')
+            ->assertSessionHas('donneeimprim.1', [
                 'code' => 'COLIS-ETAT-01',
                 'expediteur' => 'Expéditeur COLIS-ETAT-01',
-                'recepteur' => 'Récepteur COLIS-ETAT-01',
+                'recepteur' => 'Zoe Zulu',
                 'numrecepteur' => '0000000000',
                 'trajet' => 'Cotonou - Lomé',
                 'statut' => 'En transit',
@@ -228,6 +236,44 @@ class EtatControllerTest extends TestCase
             ->assertSee('Actions');
     }
 
+    public function test_transfers_are_ordered_by_sender(): void
+    {
+        $html = view('back.etats', [
+            'type' => 'transferts',
+            'titre' => 'Liste des transferts',
+            'filters' => [],
+            'donnees' => collect([
+                (object) [
+                    'id' => 1,
+                    'code' => 'TRANSFERT-ZULU',
+                    'datetransfert' => '2026-11-05 10:00:00',
+                    'expediteur' => 'Zulu Expéditeur',
+                    'villedepart' => 'Cotonou',
+                    'villedestination' => 'Lomé',
+                    'statut' => 'En attente',
+                    'montdepot' => 100,
+                    'montretrait' => 100,
+                ],
+                (object) [
+                    'id' => 2,
+                    'code' => 'TRANSFERT-ALICE',
+                    'datetransfert' => '2026-11-04 10:00:00',
+                    'expediteur' => 'Alice Expéditeur',
+                    'villedepart' => 'Cotonou',
+                    'villedestination' => 'Lomé',
+                    'statut' => 'En attente',
+                    'montdepot' => 100,
+                    'montretrait' => 100,
+                ],
+            ]),
+            'statuts' => collect(),
+            'trajets' => collect(),
+        ])->render();
+
+        $this->assertStringContainsString('data-order-column="3"', $html);
+        $this->assertTrue(strpos($html, 'TRANSFERT-ALICE') < strpos($html, 'TRANSFERT-ZULU'));
+    }
+
     private function creerAdresse(string $libelle): int
     {
         return DB::table('adresses')->insertGetId([
@@ -263,6 +309,8 @@ class EtatControllerTest extends TestCase
         return DB::table('expeditions')->insertGetId([
             'datenreg' => $date,
             'montant' => 1000,
+            'montantcolis' => 0,
+            'autrecharge' => 0,
             'montantpaye' => 0,
             'poids' => 1,
             'nbrcolis' => 1,
@@ -293,4 +341,5 @@ class EtatControllerTest extends TestCase
             'updated_at' => now(),
         ]);
     }
+
 }

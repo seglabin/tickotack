@@ -309,10 +309,17 @@ function appliqueDatatable() {
 }
 
 function appliqueClassDatatable() {
-  $(".tableDT").DataTable({
-    "responsive": true, "lengthChange": true, "autoWidth": true,
-    "buttons": ["copy", "csv", "excel", "pdf", "print", "colvis"]
-  }).buttons().container().appendTo('.tableDT_wrapper .col-md-6:eq(0)');
+  $(".tableDT").each(function () {
+    var options = {
+      "responsive": true, "lengthChange": true, "autoWidth": true,
+      "buttons": ["copy", "csv", "excel", "pdf", "print", "colvis"]
+    };
+    var orderColumn = $(this).data('order-column');
+    if (orderColumn !== undefined) {
+      options.order = [[orderColumn, 'asc']];
+    }
+    $(this).DataTable(options).buttons().container().appendTo('.tableDT_wrapper .col-md-6:eq(0)');
+  });
 
 }
 

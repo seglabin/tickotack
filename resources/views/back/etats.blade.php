@@ -11,6 +11,17 @@
     $colisSelectionne = isset($colis) ? $colis->firstWhere('id', (int) ($filters['colis'] ?? 0)) : null;
     $statutSelectionne = isset($statuts) ? $statuts->firstWhere('id', (int) ($filters['statut'] ?? 0)) : null;
     $trajetSelectionne = isset($trajets) ? $trajets->firstWhere('valeur', $filters['trajet'] ?? '') : null;
+    if ($type === 'colis') {
+        $donnees = $donnees->sortBy(
+            fn ($donnee) => $donnee->recepteur ?? '',
+            SORT_NATURAL | SORT_FLAG_CASE
+        )->values();
+    } elseif ($type === 'transferts') {
+        $donnees = $donnees->sortBy(
+            fn ($donnee) => $donnee->expediteur ?? '',
+            SORT_NATURAL | SORT_FLAG_CASE
+        )->values();
+    }
 @endphp
 
 <style>
@@ -272,7 +283,7 @@
 @endphp
     <div class="etat-report__table-wrap">
         <!-- <table class="etat-report__table"> -->
-            <table id="example1" class="table table-bordered table-striped tableDT" style="width:100%; border-collapse:collapse;">
+            <table id="example1" class="table table-bordered table-striped tableDT" @if(in_array($type, ['colis', 'transferts'], true)) data-order-column="{{ $type === 'colis' ? 2 : 3 }}" @endif style="width:100%; border-collapse:collapse;">
             <thead>
             <tr>
                 @if($type === 'colis')

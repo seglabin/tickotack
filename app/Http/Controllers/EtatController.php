@@ -53,7 +53,8 @@ class EtatController extends Controller
             $query->where('e.idetat', $filters['statut']);
         }
 
-        $donnees = $query->orderByDesc('e.datenreg')->get();
+        $donnees = $query->orderBy('rec.nom')->get();
+        // $donnees = $query->orderByDesc('rec.nom')->orderByDesc('e.datenreg')->get();
         $conteneurs = DB::table('conteneurs')->orderBy('numconteneur')->get(['id', 'numconteneur']);
         $statuts = DB::table('elements')->where('nomtable', 'etat')->orderBy('libelle')->get(['id', 'libelle']);
 
